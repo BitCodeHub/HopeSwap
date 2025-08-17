@@ -673,15 +673,18 @@ struct ProgressIndicator: View {
                             .frame(height: 2)
                     }
                     
-                    VStack(spacing: 4) {
+                    VStack(spacing: 2) {
                         Text("\(step)")
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(step <= currentStep ? Color(hex: "00D9B1") : Color.gray)
                         
                         Text(steps[step - 1])
-                            .font(.caption2)
+                            .font(.system(size: 10))
+                            .fontWeight(.medium)
                             .foregroundColor(step <= currentStep ? Color(hex: "00D9B1") : Color.gray)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                     
                     if step < 4 {
