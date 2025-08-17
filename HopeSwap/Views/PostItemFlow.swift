@@ -8,6 +8,7 @@ struct PostItemFlow: View {
     @State private var currentStep = 1
     @State private var showingImagePicker = false
     @State private var showingCamera = false
+    @State private var showingSuccessAlert = false
     
     // Item data
     @State private var title = ""
@@ -124,6 +125,13 @@ struct PostItemFlow: View {
         .sheet(isPresented: $showingCamera) {
             ImagePicker(image: $selectedImage, sourceType: .camera)
         }
+        .alert("Item Posted!", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!")
+        }
     }
     
     var canProceed: Bool {
@@ -162,8 +170,7 @@ struct PostItemFlow: View {
         )
         
         dataManager.addItem(newItem)
-        dismiss()
-        selectedTab = 0
+        showingSuccessAlert = true
     }
 }
 
