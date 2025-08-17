@@ -13,6 +13,7 @@ struct PostItemView: View {
     @State private var selectedImageData: [Data] = []
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @FocusState private var isInputActive: Bool
     
     var body: some View {
         NavigationView {
@@ -29,14 +30,15 @@ struct PostItemView: View {
                     
                     VStack(alignment: .leading, spacing: 15) {
                         VStack(alignment: .leading) {
-                            Text("Title")
+                            Text("Title *")
                                 .font(.headline)
                             TextField("Enter item title", text: $title)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .focused($isInputActive)
                         }
                         
                         VStack(alignment: .leading) {
-                            Text("Description")
+                            Text("Description *")
                                 .font(.headline)
                             TextEditor(text: $description)
                                 .frame(height: 100)
@@ -44,6 +46,7 @@ struct PostItemView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
+                                .focused($isInputActive)
                         }
                         
                         VStack(alignment: .leading) {
@@ -73,10 +76,11 @@ struct PostItemView: View {
                         }
                         
                         VStack(alignment: .leading) {
-                            Text("Location")
+                            Text("Location *")
                                 .font(.headline)
                             TextField("Enter your location", text: $location)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .focused($isInputActive)
                         }
                         
                         VStack(alignment: .leading) {
@@ -125,13 +129,35 @@ struct PostItemView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(LinearGradient(gradient: Gradient(colors: [Color.pink, Color.purple]), startPoint: .leading, endPoint: .trailing))
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.pink, Color.purple]), 
+                                startPoint: .leading, 
+                                endPoint: .trailing
+                            )
+                            .opacity(title.isEmpty || description.isEmpty || location.isEmpty ? 0.5 : 1.0)
+                        )
                         .foregroundColor(.white)
                         .cornerRadius(15)
                         .font(.headline)
                     }
                     .padding(.horizontal)
                     .disabled(title.isEmpty || description.isEmpty || location.isEmpty)
+                    
+                    if title.isEmpty || description.isEmpty || location.isEmpty {
+                        Text("Please fill in all required fields")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.horizontal)
+                    }
+                }
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        isInputActive = false
+                    }
                 }
             }
             .alert("Posted!", isPresented: $showingAlert) {
