@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @State private var showingPostFlow = false
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -18,11 +19,17 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            PostItemView(selectedTab: $selectedTab)
+            Text("")
                 .tabItem {
                     Label("Post", systemImage: "plus.circle.fill")
                 }
                 .tag(1)
+                .onAppear {
+                    if selectedTab == 1 {
+                        showingPostFlow = true
+                        selectedTab = 0
+                    }
+                }
             
             FavoritesView()
                 .tabItem {
@@ -37,6 +44,9 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.pink)
+        .fullScreenCover(isPresented: $showingPostFlow) {
+            PostItemFlow(selectedTab: $selectedTab)
+        }
     }
 }
 
