@@ -86,20 +86,23 @@ struct CardView: View {
                 Image(systemName: "heart.circle.fill")
                     .font(.system(size: 100))
                     .foregroundColor(.green)
-                    .opacity(offset.width > 100 ? 1 : 0)
-                    .animation(.easeIn(duration: 0.2), value: offset.width)
+                    .opacity(Double(max(0, offset.width - 50) / 100))
+                    .scaleEffect(offset.width > 100 ? 1.2 : 0.8)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: offset.width)
                 
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 100))
                     .foregroundColor(.red)
-                    .opacity(offset.width < -100 ? 1 : 0)
-                    .animation(.easeIn(duration: 0.2), value: offset.width)
+                    .opacity(Double(max(0, -offset.width - 50) / 100))
+                    .scaleEffect(offset.width < -100 ? 1.2 : 0.8)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: offset.width)
             }
         }
         .frame(width: 350, height: 600)
         .offset(x: offset.width, y: offset.height)
-        .opacity(2 - Double(abs(offset.width / 50)))
-        .rotationEffect(.degrees(Double(offset.width / 40)))
+        .opacity(2 - Double(abs(offset.width / 150)))
+        .rotationEffect(.degrees(Double(offset.width / 40)), anchor: .bottom)
+        .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.6, blendDuration: 0.25), value: offset)
         .gesture(
             DragGesture()
                 .onChanged { gesture in
@@ -115,14 +118,19 @@ struct CardView: View {
                     }
                 }
                 .onEnded { _ in
-                    withAnimation {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.25)) {
                         if abs(offset.width) > 100 {
-                            if offset.width > 0 {
-                                onSwipeRight?()
-                            } else {
-                                onSwipeLeft?()
+                            let direction = offset.width > 0 ? 1 : -1
+                            offset = CGSize(width: 500 * direction, height: offset.height + 50)
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                if offset.width > 0 {
+                                    onSwipeRight?()
+                                } else {
+                                    onSwipeLeft?()
+                                }
+                                removal?()
                             }
-                            removal?()
                         } else {
                             offset = .zero
                             color = .black
