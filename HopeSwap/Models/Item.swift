@@ -1,6 +1,6 @@
 import Foundation
 
-struct Item: Identifiable, Codable {
+struct Item: Identifiable, Codable, Equatable {
     let id: UUID
     var title: String
     var description: String
@@ -46,7 +46,7 @@ enum Condition: String, Codable, CaseIterable {
     case poor = "Poor"
 }
 
-enum ItemStatus: String, Codable {
+enum ItemStatus: String, Codable, Equatable {
     case available = "Available"
     case pending = "Pending"
     case traded = "Traded"
