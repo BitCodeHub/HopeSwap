@@ -27,7 +27,6 @@
 		C9DB25802E517B3C008EEA3C /* HopeSwap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HopeSwap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9DB258D2E517B3D008EEA3C /* HopeSwapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HopeSwapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9DB25972E517B3D008EEA3C /* HopeSwapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HopeSwapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C9DB25AB2E517BBC008EEA3C /* HopeSwap.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = HopeSwap.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -90,11 +89,6 @@
 				C9DB258D2E517B3D008EEA3C /* HopeSwapTests.xctest */,
 				C9DB25972E517B3D008EEA3C /* HopeSwapUITests.xctest */,
 			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		C9DB25AC2E517BBC008EEA3C /* Products */ = {
-			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -204,12 +198,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9DB25812E517B3C008EEA3C /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = C9DB25AC2E517BBC008EEA3C /* Products */;
-					ProjectRef = C9DB25AB2E517BBC008EEA3C /* HopeSwap.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				C9DB257F2E517B3C008EEA3C /* HopeSwap */,
