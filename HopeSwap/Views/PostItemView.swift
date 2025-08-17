@@ -184,7 +184,7 @@ struct PostItemView: View {
                 Text(alertMessage)
             }
         }
-        .onChange(of: selectedImages) { _ in
+        .onChange(of: selectedImages) {
             Task {
                 selectedImageData.removeAll()
                 for item in selectedImages {

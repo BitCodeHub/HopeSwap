@@ -121,7 +121,7 @@ struct CardView: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.25)) {
                         if abs(offset.width) > 100 {
                             let direction = offset.width > 0 ? 1 : -1
-                            offset = CGSize(width: 500 * direction, height: offset.height + 50)
+                            offset = CGSize(width: CGFloat(500 * direction), height: offset.height + 50)
                             
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 if offset.width > 0 {

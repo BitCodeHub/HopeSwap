@@ -88,7 +88,7 @@ struct SwipeView: View {
         .onAppear {
             loadItems()
         }
-        .onChange(of: dataManager.items) { _ in
+        .onChange(of: dataManager.items) {
             loadItems()
         }
     }
