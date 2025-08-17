@@ -22,6 +22,8 @@ struct IndexedImage: Identifiable, Equatable, Codable, Transferable {
 struct PostItemFlow: View {
     @EnvironmentObject var dataManager: DataManager
     @Binding var selectedTab: Int
+    let isTradeItem: Bool
+    
     @State private var currentStep = 1
     @State private var showingImagePicker = false
     @State private var showingCamera = false
@@ -34,6 +36,8 @@ struct PostItemFlow: View {
     @State private var selectedCondition: Condition = .good
     @State private var location = ""
     @State private var selectedImages: [UIImage] = []
+    @State private var price = ""
+    @State private var priceIsFirm = false
     
     @Environment(\.dismiss) var dismiss
     
@@ -81,7 +85,11 @@ struct PostItemFlow: View {
                                 location: $location
                             )
                         case 3:
-                            StepThreeView()
+                            StepThreeView(
+                                isTradeItem: isTradeItem,
+                                price: $price,
+                                priceIsFirm: $priceIsFirm
+                            )
                         case 4:
                             StepFourView(
                                 title: title,
@@ -90,6 +98,9 @@ struct PostItemFlow: View {
                                 condition: selectedCondition,
                                 location: location,
                                 images: selectedImages,
+                                price: isTradeItem ? nil : Double(price),
+                                priceIsFirm: priceIsFirm,
+                                isTradeItem: isTradeItem,
                                 onPost: postItem
                             )
                         default:
@@ -101,7 +112,10 @@ struct PostItemFlow: View {
                     
                     // Progress and Next button
                     VStack(spacing: 20) {
-                        ProgressIndicator(currentStep: currentStep)
+                        ProgressIndicator(
+                            currentStep: currentStep,
+                            isTradeItem: isTradeItem
+                        )
                         
                         Button(action: nextStep) {
                             Text(currentStep == 4 ? "Post Item" : "Next")
@@ -133,7 +147,9 @@ struct PostItemFlow: View {
                 dismiss()
             }
         } message: {
-            Text("Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!")
+            Text(isTradeItem ? 
+                "Your trade item has been listed successfully. Happy swapping!" :
+                "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!")
         }
     }
     
@@ -144,7 +160,12 @@ struct PostItemFlow: View {
         case 2:
             return !location.isEmpty
         case 3:
-            return true
+            if isTradeItem {
+                return true
+            } else {
+                // For sales, require a valid price
+                return !price.isEmpty && Double(price) != nil && Double(price)! > 0
+            }
         case 4:
             return true
         default:
@@ -169,7 +190,10 @@ struct PostItemFlow: View {
             category: selectedCategory,
             condition: selectedCondition,
             userId: dataManager.currentUser.id,
-            location: location
+            location: location,
+            price: isTradeItem ? nil : Double(price),
+            priceIsFirm: priceIsFirm,
+            isTradeItem: isTradeItem
         )
         
         dataManager.addItem(newItem)
@@ -564,34 +588,149 @@ struct StepTwoView: View {
 }
 
 struct StepThreeView: View {
+    let isTradeItem: Bool
+    @Binding var price: String
+    @Binding var priceIsFirm: Bool
+    @FocusState private var isInputActive: Bool
+    
     var body: some View {
-        VStack(spacing: 40) {
-            Image(systemName: "heart.circle.fill")
-                .font(.system(size: 80))
-                .foregroundColor(Color(hex: "00D9B1"))
-            
-            VStack(spacing: 16) {
-                Text("Support a Great Cause")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text("Your $1 listing fee goes directly to pediatric cancer research")
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal)
-                
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
+        ScrollView {
+            VStack(spacing: 30) {
+                if isTradeItem {
+                    // Trade content
+                    Image(systemName: "arrow.left.arrow.right.circle.fill")
+                        .font(.system(size: 80))
                         .foregroundColor(Color(hex: "00D9B1"))
-                    Text("100% of fees donated")
-                        .foregroundColor(.white)
+                        .padding(.top, 20)
+                    
+                    VStack(spacing: 16) {
+                        Text("What are you looking for?")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("Describe what you'd like to trade for")
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.gray)
+                            .padding(.horizontal)
+                        
+                        // Trade preferences would go here
+                        Text("Trade preferences coming soon!")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .italic()
+                    }
+                } else {
+                    // Sale content
+                    VStack(spacing: 24) {
+                        // Price input section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Set your price")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            HStack {
+                                Text("$")
+                                    .font(.title2)
+                                    .foregroundColor(Color(hex: "00D9B1"))
+                                
+                                TextField("0", text: $price)
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .keyboardType(.decimalPad)
+                                    .focused($isInputActive)
+                                    .onChange(of: price) { newValue in
+                                        // Allow only valid price format
+                                        let filtered = newValue.filter { "0123456789.".contains($0) }
+                                        if filtered.filter({ $0 == "." }).count > 1 {
+                                            price = String(filtered.dropLast())
+                                        } else {
+                                            price = filtered
+                                        }
+                                    }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        .padding(.horizontal)
+                        
+                        // Price is firm toggle
+                        HStack {
+                            Text("Price is firm")
+                                .font(.body)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $priceIsFirm)
+                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "00D9B1")))
+                                .labelsHidden()
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white.opacity(0.05))
+                        )
+                        .padding(.horizontal)
+                        
+                        if priceIsFirm {
+                            Text("Buyers will see that your price is non-negotiable")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        
+                        Divider()
+                            .background(Color.gray.opacity(0.3))
+                            .padding(.vertical)
+                        
+                        // Donation info
+                        VStack(spacing: 16) {
+                            Image(systemName: "heart.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(Color(hex: "00D9B1"))
+                            
+                            Text("Support a Great Cause")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            
+                            Text("Your $1 listing fee goes directly to pediatric cancer research")
+                                .font(.body)
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
+                            
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(Color(hex: "00D9B1"))
+                                Text("100% of fees donated")
+                                    .foregroundColor(.white)
+                            }
+                            .font(.subheadline)
+                        }
+                    }
                 }
-                .font(.subheadline)
+            }
+            .padding(.vertical)
+        }
+        .onTapGesture {
+            isInputActive = false
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    isInputActive = false
+                }
+                .foregroundColor(Color(hex: "00D9B1"))
             }
         }
-        .padding()
     }
 }
 
@@ -602,6 +741,9 @@ struct StepFourView: View {
     let condition: Condition
     let location: String
     let images: [UIImage]
+    let price: Double?
+    let priceIsFirm: Bool
+    let isTradeItem: Bool
     let onPost: () -> Void
     
     var body: some View {
@@ -636,14 +778,32 @@ struct StepFourView: View {
                     DetailRow(label: "Condition", value: condition.rawValue)
                     DetailRow(label: "Location", value: location)
                     
+                    if let price = price {
+                        HStack {
+                            DetailRow(label: "Price", value: "$\(String(format: "%.2f", price))")
+                            if priceIsFirm {
+                                Text("FIRM")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color(hex: "00D9B1"))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color(hex: "00D9B1").opacity(0.2))
+                                    )
+                            }
+                        }
+                    }
+                    
                     Divider()
                         .background(Color.gray.opacity(0.3))
                     
                     HStack {
-                        Text("Listing Fee")
+                        Text(isTradeItem ? "Trade Type" : "Listing Fee")
                             .foregroundColor(.gray)
                         Spacer()
-                        Text("$1.00")
+                        Text(isTradeItem ? "FREE" : "$1.00")
                             .font(.headline)
                             .foregroundColor(Color(hex: "00D9B1"))
                     }
@@ -661,7 +821,11 @@ struct StepFourView: View {
 
 struct ProgressIndicator: View {
     let currentStep: Int
-    let steps = ["Post", "Details", "Price", "Finish"]
+    let isTradeItem: Bool
+    
+    var steps: [String] {
+        isTradeItem ? ["Post", "Details", "Trade", "Finish"] : ["Post", "Details", "Price", "Finish"]
+    }
     
     var body: some View {
         HStack(spacing: 0) {

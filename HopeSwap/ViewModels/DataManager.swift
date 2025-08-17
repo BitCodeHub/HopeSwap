@@ -15,11 +15,11 @@ class DataManager: ObservableObject {
     
     func loadSampleData() {
         items = [
-            Item(title: "Vintage Camera", description: "Classic film camera in working condition", category: .electronics, condition: .good, userId: UUID(), location: "New York"),
-            Item(title: "Children's Books Set", description: "Collection of 20 popular children's books", category: .books, condition: .likeNew, userId: UUID(), location: "Los Angeles"),
-            Item(title: "Bicycle", description: "Mountain bike, barely used", category: .sports, condition: .likeNew, userId: UUID(), location: "Chicago"),
-            Item(title: "Coffee Maker", description: "Espresso machine with milk frother", category: .home, condition: .good, userId: UUID(), location: "Seattle"),
-            Item(title: "Winter Jacket", description: "Warm winter jacket, size M", category: .clothing, condition: .new, userId: UUID(), location: "Boston")
+            Item(title: "Vintage Camera", description: "Classic film camera in working condition", category: .electronics, condition: .good, userId: UUID(), location: "New York", price: 150.00, priceIsFirm: true, isTradeItem: false),
+            Item(title: "Children's Books Set", description: "Collection of 20 popular children's books", category: .books, condition: .likeNew, userId: UUID(), location: "Los Angeles", price: nil, priceIsFirm: false, isTradeItem: true),
+            Item(title: "Bicycle", description: "Mountain bike, barely used", category: .sports, condition: .likeNew, userId: UUID(), location: "Chicago", price: 250.00, priceIsFirm: false, isTradeItem: false),
+            Item(title: "Coffee Maker", description: "Espresso machine with milk frother", category: .home, condition: .good, userId: UUID(), location: "Seattle", price: nil, priceIsFirm: false, isTradeItem: true),
+            Item(title: "Winter Jacket", description: "Warm winter jacket, size M", category: .clothing, condition: .new, userId: UUID(), location: "Boston", price: 75.99, priceIsFirm: true, isTradeItem: false)
         ]
     }
     

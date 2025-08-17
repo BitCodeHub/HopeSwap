@@ -12,8 +12,20 @@ struct Item: Identifiable, Codable, Equatable {
     var status: ItemStatus
     var location: String
     var favoriteCount: Int
+    var price: Double?
+    var priceIsFirm: Bool
+    var isTradeItem: Bool
     
-    init(id: UUID = UUID(), title: String, description: String, category: Category, condition: Condition, userId: UUID, location: String) {
+    init(id: UUID = UUID(), 
+         title: String, 
+         description: String, 
+         category: Category, 
+         condition: Condition, 
+         userId: UUID, 
+         location: String,
+         price: Double? = nil,
+         priceIsFirm: Bool = false,
+         isTradeItem: Bool = false) {
         self.id = id
         self.title = title
         self.description = description
@@ -25,6 +37,9 @@ struct Item: Identifiable, Codable, Equatable {
         self.status = .available
         self.location = location
         self.favoriteCount = 0
+        self.price = price
+        self.priceIsFirm = priceIsFirm
+        self.isTradeItem = isTradeItem
     }
 }
 

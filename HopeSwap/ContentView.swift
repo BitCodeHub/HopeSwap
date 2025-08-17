@@ -9,43 +9,79 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    @State private var showingPostFlow = false
+    @State private var showingPostOptions = false
+    @State private var selectedPostType: PostType? = nil
+    
+    enum PostType: Identifiable {
+        case itemForSale
+        case itemForTrade
+        case freebies
+        case needHelp
+        case events
+        
+        var id: String {
+            switch self {
+            case .itemForSale: return "itemForSale"
+            case .itemForTrade: return "itemForTrade"
+            case .freebies: return "freebies"
+            case .needHelp: return "needHelp"
+            case .events: return "events"
+            }
+        }
+    }
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            SwipeView()
-                .tabItem {
-                    Label("Browse", systemImage: "square.stack")
-                }
-                .tag(0)
-            
-            Text("")
-                .tabItem {
-                    Label("Post", systemImage: "plus.circle.fill")
-                }
-                .tag(1)
-                .onAppear {
-                    if selectedTab == 1 {
-                        showingPostFlow = true
-                        selectedTab = 0
+        ZStack {
+            TabView(selection: $selectedTab) {
+                SwipeView()
+                    .tabItem {
+                        Label("Browse", systemImage: "square.stack")
                     }
-                }
-            
-            FavoritesView()
-                .tabItem {
-                    Label("Favorites", systemImage: "heart.fill")
-                }
-                .tag(2)
-            
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
-                }
-                .tag(3)
+                    .tag(0)
+                
+                Text("")
+                    .tabItem {
+                        Label("Post", systemImage: "plus.circle.fill")
+                    }
+                    .tag(1)
+                    .onAppear {
+                        if selectedTab == 1 {
+                            showingPostOptions = true
+                            selectedTab = 0
+                        }
+                    }
+                
+                FavoritesView()
+                    .tabItem {
+                        Label("Favorites", systemImage: "heart.fill")
+                    }
+                    .tag(2)
+                
+                ProfileView()
+                    .tabItem {
+                        Label("Profile", systemImage: "person.fill")
+                    }
+                    .tag(3)
+            }
+            .accentColor(.pink)
         }
-        .accentColor(.pink)
-        .fullScreenCover(isPresented: $showingPostFlow) {
-            PostItemFlow(selectedTab: $selectedTab)
+        .sheet(isPresented: $showingPostOptions) {
+            PostOptionsSheet(
+                selectedPostType: $selectedPostType,
+                showingPostOptions: $showingPostOptions
+            )
+            .presentationDetents([.height(400)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.black.opacity(0.9))
+        }
+        .fullScreenCover(item: $selectedPostType) { postType in
+            if postType == .itemForSale || postType == .itemForTrade {
+                PostItemFlow(
+                    selectedTab: $selectedTab,
+                    isTradeItem: postType == .itemForTrade
+                )
+                .environmentObject(DataManager.shared)
+            }
         }
     }
 }

@@ -91,6 +91,42 @@ struct CardView: View {
                         .lineLimit(3)
                         .foregroundColor(.black.opacity(0.8))
                     
+                    // Price or Trade indicator
+                    HStack {
+                        if item.isTradeItem {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.left.arrow.right")
+                                    .font(.caption)
+                                Text("For Trade")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(Color(hex: "00D9B1"))
+                        } else if let price = item.price {
+                            HStack(spacing: 8) {
+                                Text("$\(String(format: "%.2f", price))")
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                
+                                if item.priceIsFirm {
+                                    Text("FIRM")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(Color(hex: "00D9B1"))
+                                        )
+                                }
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                    
                     HStack {
                         Label(item.location, systemImage: "location")
                             .font(.caption)
@@ -166,3 +202,4 @@ struct CardView: View {
         )
     }
 }
+
