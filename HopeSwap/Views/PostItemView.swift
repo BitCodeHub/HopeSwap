@@ -17,9 +17,16 @@ struct PostItemView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    Text("List an Item")
+            ZStack {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isInputActive = false
+                    }
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("List an Item")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .foregroundColor(.pink)
@@ -130,25 +137,33 @@ struct PostItemView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.pink, Color.purple]), 
-                                startPoint: .leading, 
-                                endPoint: .trailing
-                            )
-                            .opacity(title.isEmpty || description.isEmpty || location.isEmpty ? 0.5 : 1.0)
+                            Group {
+                                if title.isEmpty || description.isEmpty || location.isEmpty {
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 15)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                } else {
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: [Color.pink, Color.purple]), 
+                                                startPoint: .leading, 
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                }
+                            }
                         )
-                        .foregroundColor(.white)
-                        .cornerRadius(15)
+                        .foregroundColor(title.isEmpty || description.isEmpty || location.isEmpty ? Color.gray.opacity(0.5) : .white)
                         .font(.headline)
+                        .scaleEffect(title.isEmpty || description.isEmpty || location.isEmpty ? 0.98 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: title.isEmpty || description.isEmpty || location.isEmpty)
                     }
                     .padding(.horizontal)
                     .disabled(title.isEmpty || description.isEmpty || location.isEmpty)
-                    
-                    if title.isEmpty || description.isEmpty || location.isEmpty {
-                        Text("Please fill in all required fields")
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(.horizontal)
                     }
                 }
             }
