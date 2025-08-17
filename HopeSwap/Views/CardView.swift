@@ -8,6 +8,24 @@ struct CardView: View {
     var onSwipeLeft: (() -> Void)? = nil
     var onSwipeRight: (() -> Void)? = nil
     
+    func animateRemoval(direction: Int) {
+        withAnimation(.easeOut(duration: 0.3)) {
+            offset = CGSize(
+                width: CGFloat(500 * direction),
+                height: 50
+            )
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if direction > 0 {
+                onSwipeRight?()
+            } else {
+                onSwipeLeft?()
+            }
+            removal?()
+        }
+    }
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)

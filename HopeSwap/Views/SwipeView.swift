@@ -141,14 +141,18 @@ struct SwipeView: View {
     func skipCurrentItem() {
         if let firstItem = displayedItems.first {
             skipItem(firstItem)
-            removeCard(firstItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                removeCard(firstItem)
+            }
         }
     }
     
     func favoriteCurrentItem() {
         if let firstItem = displayedItems.first {
             favoriteItem(firstItem)
-            removeCard(firstItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                removeCard(firstItem)
+            }
         }
     }
 }
