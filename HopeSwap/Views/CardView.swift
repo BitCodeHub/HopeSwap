@@ -3,7 +3,7 @@ import SwiftUI
 struct CardView: View {
     let item: Item
     @State private var offset = CGSize.zero
-    @State private var color: Color = .black
+    @State private var isDragging = false
     var removal: (() -> Void)? = nil
     var onSwipeLeft: (() -> Void)? = nil
     var onSwipeRight: (() -> Void)? = nil
@@ -12,7 +12,12 @@ struct CardView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
                 .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .shadow(
+                    color: Color.black.opacity(isDragging ? 0.15 : 0.1), 
+                    radius: isDragging ? 12 : 8, 
+                    x: 0, 
+                    y: isDragging ? 8 : 4
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 25)
                         .stroke(Color.gray.opacity(0.1), lineWidth: 1)
@@ -91,53 +96,52 @@ struct CardView: View {
                     .font(.system(size: 100))
                     .foregroundColor(.green)
                     .opacity(Double(max(0, offset.width - 50) / 100))
-                    .scaleEffect(offset.width > 100 ? 1.2 : 0.8)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: offset.width)
+                    .scaleEffect(offset.width > 100 ? 1.1 : 0.8)
                 
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 100))
                     .foregroundColor(.red)
                     .opacity(Double(max(0, -offset.width - 50) / 100))
-                    .scaleEffect(offset.width < -100 ? 1.2 : 0.8)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: offset.width)
+                    .scaleEffect(offset.width < -100 ? 1.1 : 0.8)
             }
         }
         .frame(maxWidth: 340, maxHeight: 580)
-        .offset(x: offset.width, y: offset.height)
-        .opacity(2 - Double(abs(offset.width / 150)))
-        .rotationEffect(.degrees(Double(offset.width / 40)), anchor: .bottom)
-        .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.6, blendDuration: 0.25), value: offset)
+        .offset(x: offset.width, y: offset.height * 0.4)
+        .opacity(2 - Double(abs(offset.width / 200)))
+        .rotationEffect(.degrees(Double(offset.width / 30)), anchor: .bottom)
+        .animation(isDragging ? .none : .interpolatingSpring(stiffness: 180, damping: 20), value: offset)
         .gesture(
             DragGesture()
                 .onChanged { gesture in
+                    isDragging = true
                     offset = gesture.translation
-                    withAnimation {
-                        if offset.width > 100 {
-                            color = .green
-                        } else if offset.width < -100 {
-                            color = .red
-                        } else {
-                            color = .black
-                        }
-                    }
                 }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.25)) {
-                        if abs(offset.width) > 100 {
-                            let direction = offset.width > 0 ? 1 : -1
-                            offset = CGSize(width: CGFloat(500 * direction), height: offset.height + 50)
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                if offset.width > 0 {
-                                    onSwipeRight?()
-                                } else {
-                                    onSwipeLeft?()
-                                }
-                                removal?()
+                .onEnded { gesture in
+                    isDragging = false
+                    
+                    if abs(offset.width) > 100 || abs(gesture.predictedEndTranslation.width) > 150 {
+                        // Card will be removed
+                        let direction = offset.width > 0 ? 1 : -1
+                        
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            offset = CGSize(
+                                width: CGFloat(500 * direction), 
+                                height: offset.height + 100
+                            )
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            if direction > 0 {
+                                onSwipeRight?()
+                            } else {
+                                onSwipeLeft?()
                             }
-                        } else {
+                            removal?()
+                        }
+                    } else {
+                        // Card returns to center
+                        withAnimation(.interpolatingSpring(stiffness: 200, damping: 25)) {
                             offset = .zero
-                            color = .black
                         }
                     }
                 }

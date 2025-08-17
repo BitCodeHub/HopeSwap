@@ -86,10 +86,10 @@ struct SwipeView: View {
                             .foregroundColor(.red)
                             .shadow(color: .red.opacity(0.3), radius: 5, x: 0, y: 3)
                     }
-                    .scaleEffect((displayedItems.isEmpty ? 0.8 : 1.0) * (skipButtonPressed ? 0.9 : 1.0))
+                    .scaleEffect((displayedItems.isEmpty ? 0.8 : 1.0) * (skipButtonPressed ? 0.95 : 1.0))
                     .disabled(displayedItems.isEmpty)
                     .opacity(displayedItems.isEmpty ? 0.5 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: skipButtonPressed)
+                    .animation(.easeInOut(duration: 0.1), value: skipButtonPressed)
                     
                     Button(action: {
                         likeButtonPressed = true
@@ -103,10 +103,10 @@ struct SwipeView: View {
                             .foregroundColor(.green)
                             .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
                     }
-                    .scaleEffect((displayedItems.isEmpty ? 0.8 : 1.0) * (likeButtonPressed ? 0.9 : 1.0))
+                    .scaleEffect((displayedItems.isEmpty ? 0.8 : 1.0) * (likeButtonPressed ? 0.95 : 1.0))
                     .disabled(displayedItems.isEmpty)
                     .opacity(displayedItems.isEmpty ? 0.5 : 1.0)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.6), value: likeButtonPressed)
+                    .animation(.easeInOut(duration: 0.1), value: likeButtonPressed)
                 }
                 .padding()
             }
@@ -124,7 +124,9 @@ struct SwipeView: View {
     }
     
     func removeCard(_ item: Item) {
-        displayedItems.removeAll { $0.id == item.id }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            displayedItems.removeAll { $0.id == item.id }
+        }
     }
     
     func skipItem(_ item: Item) {
