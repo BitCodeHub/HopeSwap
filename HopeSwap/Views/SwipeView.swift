@@ -29,23 +29,49 @@ struct SwipeView: View {
                 .padding()
                 
                 ZStack {
-                    ForEach(displayedItems) { item in
-                        CardView(
-                            item: item,
-                            removal: {
-                                removeCard(item)
-                            },
-                            onSwipeLeft: {
-                                skipItem(item)
-                            },
-                            onSwipeRight: {
-                                favoriteItem(item)
-                            }
+                    if displayedItems.isEmpty {
+                        VStack(spacing: 20) {
+                            Image(systemName: "tray.fill")
+                                .font(.system(size: 80))
+                                .foregroundColor(.gray.opacity(0.3))
+                            
+                            Text("No more items")
+                                .font(.title2)
+                                .foregroundColor(.gray)
+                            
+                            Text("Check back later for new listings!")
+                                .font(.subheadline)
+                                .foregroundColor(.gray.opacity(0.8))
+                        }
+                        .frame(maxWidth: 340, maxHeight: 580)
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.gray.opacity(0.05))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                                )
                         )
-                        .stacked(at: displayedItems.firstIndex(where: { $0.id == item.id }) ?? 0, in: displayedItems.count)
+                    } else {
+                        ForEach(Array(displayedItems.enumerated().reversed()), id: \.element.id) { index, item in
+                            CardView(
+                                item: item,
+                                removal: {
+                                    removeCard(item)
+                                },
+                                onSwipeLeft: {
+                                    skipItem(item)
+                                },
+                                onSwipeRight: {
+                                    favoriteItem(item)
+                                }
+                            )
+                            .stacked(at: index, in: displayedItems.count)
+                            .allowsHitTesting(index == 0)
+                        }
                     }
                 }
-                .padding()
+                .padding(.horizontal)
                 
                 HStack(spacing: 80) {
                     Button(action: {
@@ -127,7 +153,11 @@ struct SwipeView: View {
 
 extension View {
     func stacked(at position: Int, in total: Int) -> some View {
-        let offset = Double(total - position)
-        return self.offset(y: offset * 10)
+        let offset = Double(position)
+        return self
+            .scaleEffect(position == 0 ? 1 : (0.95 - (offset * 0.02)))
+            .offset(y: position == 0 ? 0 : (offset * 12))
+            .opacity(position < 3 ? 1 : 0)
+            .zIndex(Double(total - position))
     }
 }

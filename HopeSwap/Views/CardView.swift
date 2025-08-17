@@ -12,7 +12,11 @@ struct CardView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
                 .fill(Color.white)
-                .shadow(color: .gray.opacity(0.2), radius: 10, x: 0, y: 5)
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                )
             
             VStack(spacing: 12) {
                 if let firstImage = item.images.first {
@@ -98,7 +102,7 @@ struct CardView: View {
                     .animation(.spring(response: 0.3, dampingFraction: 0.6), value: offset.width)
             }
         }
-        .frame(width: 350, height: 600)
+        .frame(maxWidth: 340, maxHeight: 580)
         .offset(x: offset.width, y: offset.height)
         .opacity(2 - Double(abs(offset.width / 150)))
         .rotationEffect(.degrees(Double(offset.width / 40)), anchor: .bottom)
