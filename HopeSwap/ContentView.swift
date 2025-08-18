@@ -33,19 +33,25 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
+                DiscoverView()
+                    .tabItem {
+                        Label("Discover", systemImage: "magnifyingglass")
+                    }
+                    .tag(0)
+                
                 SwipeView()
                     .tabItem {
                         Label("Browse", systemImage: "square.stack")
                     }
-                    .tag(0)
+                    .tag(1)
                 
                 Text("")
                     .tabItem {
                         Label("Post", systemImage: "plus.circle.fill")
                     }
-                    .tag(1)
+                    .tag(2)
                     .onAppear {
-                        if selectedTab == 1 {
+                        if selectedTab == 2 {
                             showingPostOptions = true
                             selectedTab = 0
                         }
@@ -55,15 +61,15 @@ struct ContentView: View {
                     .tabItem {
                         Label("Favorites", systemImage: "heart.fill")
                     }
-                    .tag(2)
+                    .tag(3)
                 
                 ProfileView()
                     .tabItem {
                         Label("Profile", systemImage: "person.fill")
                     }
-                    .tag(3)
+                    .tag(4)
             }
-            .accentColor(.pink)
+            .accentColor(Color.hopeOrange)
         }
         .sheet(isPresented: $showingPostOptions) {
             PostOptionsSheet(

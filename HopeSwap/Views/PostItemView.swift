@@ -31,7 +31,7 @@ struct PostItemView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.pink)
                     
-                    Text("$1 listing fee goes to pediatric cancer research")
+                    Text("$1 listing fee goes to Pediatric cancer research")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     

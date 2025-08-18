@@ -26,6 +26,25 @@ struct CardView: View {
         }
     }
     
+    func categoryColor(for category: Category) -> Color {
+        switch category {
+        case .electronics:
+            return Color.hopeBlue
+        case .clothing:
+            return Color.hopePink
+        case .books:
+            return Color.hopePurple
+        case .toys:
+            return Color.hopeOrange
+        case .home:
+            return Color.hopeGreen
+        case .sports:
+            return Color.hopeTeal
+        case .other:
+            return Color.hopeYellow
+        }
+    }
+    
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 25)
@@ -78,9 +97,14 @@ struct CardView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.black)
                     
-                    Label(item.category.rawValue, systemImage: "tag")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                    Label {
+                        Text(item.category.rawValue)
+                            .font(.subheadline)
+                    } icon: {
+                        Image(systemName: "tag")
+                            .foregroundColor(categoryColor(for: item.category))
+                    }
+                    .foregroundColor(.gray)
                     
                     Label(item.condition.rawValue, systemImage: "star")
                         .font(.subheadline)
@@ -101,7 +125,7 @@ struct CardView: View {
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                             }
-                            .foregroundColor(Color(hex: "00D9B1"))
+                            .foregroundColor(Color.hopeGreen)
                         } else if let price = item.price {
                             HStack(spacing: 8) {
                                 Text("$\(String(format: "%.2f", price))")
@@ -118,7 +142,7 @@ struct CardView: View {
                                         .padding(.vertical, 3)
                                         .background(
                                             RoundedRectangle(cornerRadius: 4)
-                                                .fill(Color(hex: "00D9B1"))
+                                                .fill(Color.hopeBlue)
                                         )
                                 }
                             }
@@ -148,7 +172,7 @@ struct CardView: View {
             ZStack {
                 Image(systemName: "heart.circle.fill")
                     .font(.system(size: 100))
-                    .foregroundColor(.green)
+                    .foregroundColor(Color.hopePink)
                     .opacity(Double(max(0, offset.width - 50) / 100))
                     .scaleEffect(offset.width > 100 ? 1.1 : 0.8)
                 

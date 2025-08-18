@@ -81,7 +81,7 @@ struct PostOptionsSheet: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "1C2B3B"))
+                    .fill(Color.hopeDarkSecondary)
             )
             .padding(.horizontal, 20)
             
@@ -97,12 +97,29 @@ struct PostOptionRow: View {
     let title: String
     let action: () -> Void
     
+    var iconColor: Color {
+        switch title {
+        case "Item for sale":
+            return Color.hopeBlue
+        case "Item for trade":
+            return Color.hopeGreen
+        case "Freebies":
+            return Color.hopePink
+        case "I need help":
+            return Color.hopeOrange
+        case "Events":
+            return Color.hopePurple
+        default:
+            return Color.white
+        }
+    }
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 20) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(.white)
+                    .foregroundColor(iconColor)
                     .frame(width: 24)
                 
                 Text(title)

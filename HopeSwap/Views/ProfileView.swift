@@ -11,7 +11,7 @@ struct ProfileView: View {
                     VStack(spacing: 15) {
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 100))
-                            .foregroundColor(.pink)
+                            .foregroundColor(Color.hopeOrange)
                         
                         Text(dataManager.currentUser.username)
                             .font(.title)
@@ -25,13 +25,13 @@ struct ProfileView: View {
                     
                     VStack(spacing: 15) {
                         HStack {
-                            StatCard(title: "Total Donated", value: "$\(Int(dataManager.currentUser.totalDonated))", icon: "heart.fill", color: .pink)
-                            StatCard(title: "Items Listed", value: "\(dataManager.currentUser.itemsListed)", icon: "tag.fill", color: .blue)
+                            StatCard(title: "Total Donated", value: "$\(Int(dataManager.currentUser.totalDonated))", icon: "heart.fill", color: Color.hopePink)
+                            StatCard(title: "Items Listed", value: "\(dataManager.currentUser.itemsListed)", icon: "tag.fill", color: Color.hopeBlue)
                         }
                         
                         HStack {
-                            StatCard(title: "Trades Done", value: "\(dataManager.currentUser.tradesCompleted)", icon: "arrow.triangle.2.circlepath", color: .green)
-                            StatCard(title: "Member Since", value: dateFormatter.string(from: dataManager.currentUser.joinedDate), icon: "calendar", color: .orange)
+                            StatCard(title: "Trades Done", value: "\(dataManager.currentUser.tradesCompleted)", icon: "arrow.triangle.2.circlepath", color: Color.hopeGreen)
+                            StatCard(title: "Member Since", value: dateFormatter.string(from: dataManager.currentUser.joinedDate), icon: "calendar", color: Color.hopePurple)
                         }
                     }
                     .padding(.horizontal)
@@ -46,24 +46,24 @@ struct ProfileView: View {
                         MenuRow(title: "Help & Support", icon: "questionmark.circle", action: {})
                         MenuRow(title: "About Hope", icon: "info.circle", action: {})
                     }
-                    .background(Color.white)
+                    .background(Color.hopeDarkSecondary)
                     .cornerRadius(15)
                     .padding(.horizontal)
-                    .shadow(color: .gray.opacity(0.1), radius: 5, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
                     
                     Button(action: {}) {
                         Text("Sign Out")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.red.opacity(0.1))
-                            .foregroundColor(.red)
+                            .background(Color.hopeError.opacity(0.1))
+                            .foregroundColor(Color.hopeError)
                             .cornerRadius(10)
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
                 }
             }
-            .background(Color.gray.opacity(0.05))
+            .background(Color.hopeDarkBg)
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingDonationHistory) {
@@ -101,9 +101,9 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.white)
+        .background(Color.hopeDarkSecondary)
         .cornerRadius(15)
-        .shadow(color: .gray.opacity(0.1), radius: 5, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
     }
 }
 
@@ -117,10 +117,10 @@ struct MenuRow: View {
             HStack {
                 Image(systemName: icon)
                     .frame(width: 30)
-                    .foregroundColor(.pink)
+                    .foregroundColor(Color.hopeOrange)
                 
                 Text(title)
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                 
                 Spacer()
                 
@@ -148,7 +148,7 @@ struct DonationHistoryView: View {
                 Text("$125")
                     .font(.system(size: 60))
                     .fontWeight(.bold)
-                    .foregroundColor(.pink)
+                    .foregroundColor(Color.hopeOrange)
                 
                 Text("donated to pediatric cancer research")
                     .font(.subheadline)
@@ -194,7 +194,7 @@ struct DonationRow: View {
             
             Text("$\(Int(amount))")
                 .font(.headline)
-                .foregroundColor(.pink)
+                .foregroundColor(Color.hopeOrange)
         }
         .padding(.vertical, 4)
     }

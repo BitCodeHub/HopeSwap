@@ -16,6 +16,21 @@ struct Item: Identifiable, Codable, Equatable {
     var priceIsFirm: Bool
     var isTradeItem: Bool
     
+    // Trade preferences
+    var lookingFor: String?
+    var acceptableItems: String?
+    var tradeSuggestions: String?
+    var openToOffers: Bool
+    
+    // New properties for Discover view
+    var isJustListed: Bool {
+        let hoursSincePosted = Date().timeIntervalSince(postedDate) / 3600
+        return hoursSincePosted < 24
+    }
+    
+    var isNearby: Bool = false
+    var distance: Double? = nil
+    
     init(id: UUID = UUID(), 
          title: String, 
          description: String, 
@@ -23,9 +38,14 @@ struct Item: Identifiable, Codable, Equatable {
          condition: Condition, 
          userId: UUID, 
          location: String,
+         postedDate: Date = Date(),
          price: Double? = nil,
          priceIsFirm: Bool = false,
-         isTradeItem: Bool = false) {
+         isTradeItem: Bool = false,
+         lookingFor: String? = nil,
+         acceptableItems: String? = nil,
+         tradeSuggestions: String? = nil,
+         openToOffers: Bool = false) {
         self.id = id
         self.title = title
         self.description = description
@@ -33,13 +53,17 @@ struct Item: Identifiable, Codable, Equatable {
         self.condition = condition
         self.images = []
         self.userId = userId
-        self.postedDate = Date()
+        self.postedDate = postedDate
         self.status = .available
         self.location = location
         self.favoriteCount = 0
         self.price = price
         self.priceIsFirm = priceIsFirm
         self.isTradeItem = isTradeItem
+        self.lookingFor = lookingFor
+        self.acceptableItems = acceptableItems
+        self.tradeSuggestions = tradeSuggestions
+        self.openToOffers = openToOffers
     }
 }
 

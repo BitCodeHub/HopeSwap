@@ -6,6 +6,7 @@ struct FavoritesView: View {
     var body: some View {
         NavigationView {
             ScrollView {
+                Color.clear
                 if dataManager.getFavoriteItems().isEmpty {
                     VStack(spacing: 20) {
                         Image(systemName: "heart.slash")
@@ -31,6 +32,7 @@ struct FavoritesView: View {
                     .padding()
                 }
             }
+            .background(Color.hopeDarkBg)
             .navigationTitle("Favorites")
             .navigationBarTitleDisplayMode(.large)
         }
@@ -74,6 +76,7 @@ struct FavoriteItemCard: View {
                 Text(item.title)
                     .font(.headline)
                     .lineLimit(1)
+                    .foregroundColor(.white)
                 
                 Text(item.condition.rawValue)
                     .font(.caption)
@@ -90,8 +93,8 @@ struct FavoriteItemCard: View {
             .padding(.horizontal, 8)
             .padding(.bottom, 8)
         }
-        .background(Color.white)
+        .background(Color.hopeDarkSecondary)
         .cornerRadius(15)
-        .shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
     }
 }

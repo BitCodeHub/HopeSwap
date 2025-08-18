@@ -4,6 +4,7 @@ import UIKit
 import AVFoundation
 import UniformTypeIdentifiers
 import CoreTransferable
+import MapKit
 
 // Helper struct for drag and drop
 struct IndexedImage: Identifiable, Equatable, Codable, Transferable {
@@ -39,12 +40,18 @@ struct PostItemFlow: View {
     @State private var price = ""
     @State private var priceIsFirm = false
     
+    // Trade preferences
+    @State private var lookingFor = ""
+    @State private var acceptableItems = ""
+    @State private var tradeSuggestions = ""
+    @State private var openToOffers = false
+    
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "0A1929")
+                Color.hopeDarkBg
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -88,7 +95,11 @@ struct PostItemFlow: View {
                             StepThreeView(
                                 isTradeItem: isTradeItem,
                                 price: $price,
-                                priceIsFirm: $priceIsFirm
+                                priceIsFirm: $priceIsFirm,
+                                lookingFor: $lookingFor,
+                                acceptableItems: $acceptableItems,
+                                tradeSuggestions: $tradeSuggestions,
+                                openToOffers: $openToOffers
                             )
                         case 4:
                             StepFourView(
@@ -101,6 +112,10 @@ struct PostItemFlow: View {
                                 price: isTradeItem ? nil : Double(price),
                                 priceIsFirm: priceIsFirm,
                                 isTradeItem: isTradeItem,
+                                lookingFor: lookingFor,
+                                acceptableItems: acceptableItems,
+                                tradeSuggestions: tradeSuggestions,
+                                openToOffers: openToOffers,
                                 onPost: postItem
                             )
                         default:
@@ -120,12 +135,12 @@ struct PostItemFlow: View {
                         Button(action: nextStep) {
                             Text(currentStep == 4 ? "Post Item" : "Next")
                                 .font(.headline)
-                                .foregroundColor(Color(hex: "0A1929"))
+                                .foregroundColor(Color.hopeDarkBg)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 18)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(canProceed ? Color(hex: "00D9B1") : Color.gray.opacity(0.3))
+                                        .fill(canProceed ? Color.hopeOrange : Color.gray.opacity(0.3))
                                 )
                         }
                         .disabled(!canProceed)
@@ -193,7 +208,11 @@ struct PostItemFlow: View {
             location: location,
             price: isTradeItem ? nil : Double(price),
             priceIsFirm: priceIsFirm,
-            isTradeItem: isTradeItem
+            isTradeItem: isTradeItem,
+            lookingFor: isTradeItem ? lookingFor : nil,
+            acceptableItems: isTradeItem ? acceptableItems : nil,
+            tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
+            openToOffers: isTradeItem ? openToOffers : false
         )
         
         dataManager.addItem(newItem)
@@ -230,7 +249,7 @@ struct StepOneView: View {
                 Button("Done") {
                     isInputActive = false
                 }
-                .foregroundColor(Color(hex: "00D9B1"))
+                .foregroundColor(Color.hopeOrange)
             }
         }
         .confirmationDialog("Add Photo", isPresented: $showingAddPhotoOptions, titleVisibility: .visible) {
@@ -381,11 +400,11 @@ struct StepOneView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "camera.fill")
                         .font(.title2)
-                        .foregroundColor(Color(hex: "00D9B1"))
+                        .foregroundColor(Color.hopeOrange)
                     Text("Add Photo")
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(Color(hex: "00D9B1"))
+                        .foregroundColor(Color.hopeOrange)
                 }
                 .frame(height: 110)
                 .frame(maxWidth: .infinity)
@@ -398,11 +417,11 @@ struct StepOneView: View {
     
     var addPhotoButtonBackground: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(Color(hex: "0A1929"))
+            .fill(Color.hopeDarkBg)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(style: StrokeStyle(lineWidth: 2, dash: [5]))
-                    .foregroundColor(Color(hex: "00D9B1"))
+                    .foregroundColor(Color.hopeOrange)
             )
     }
     
@@ -419,7 +438,7 @@ struct StepOneView: View {
                     .foregroundColor(.gray)
                 Text("First photo is the cover and cannot be moved")
                     .font(.caption2)
-                    .foregroundColor(Color(hex: "00D9B1"))
+                    .foregroundColor(Color.hopeOrange)
                     .italic()
             }
         }
@@ -510,6 +529,9 @@ struct StepTwoView: View {
     @Binding var condition: Condition
     @Binding var location: String
     @FocusState private var isInputActive: Bool
+    @StateObject private var locationSearchCompleter = LocationSearchCompleter()
+    @State private var searchResults: [MKLocalSearchCompletion] = []
+    @State private var isSearching = false
     
     var body: some View {
         ScrollView {
@@ -556,23 +578,104 @@ struct StepTwoView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    TextField("", text: $location)
-                        .placeholder(when: location.isEmpty) {
-                            Text("City, State")
-                                .foregroundColor(.gray)
+                    VStack(spacing: 0) {
+                        HStack {
+                            TextField("", text: $location)
+                                .placeholder(when: location.isEmpty) {
+                                    Text("Search city, address, or business")
+                                        .foregroundColor(.gray)
+                                }
+                                .foregroundColor(.white)
+                                .focused($isInputActive)
+                                .onChange(of: location) { _, newValue in
+                                    locationSearchCompleter.searchQuery = newValue
+                                    isSearching = !newValue.isEmpty
+                                }
+                            
+                            // Clear button
+                            if !location.isEmpty {
+                                Button(action: {
+                                    location = ""
+                                    isSearching = false
+                                    searchResults = []
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.body)
+                                        .foregroundColor(.gray)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
-                        .foregroundColor(.white)
                         .padding()
                         .background(
-                            RoundedRectangle(cornerRadius: 16)
+                            RoundedRectangle(cornerRadius: isSearching && !searchResults.isEmpty ? [.topLeft, .topRight] : [.allCorners], radius: 16)
                                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                         )
-                        .focused($isInputActive)
+                        
+                        // Search results dropdown
+                        if isSearching && !searchResults.isEmpty {
+                            VStack(spacing: 0) {
+                                ForEach(searchResults.prefix(5), id: \.self) { result in
+                                    Button(action: {
+                                        selectLocation(result)
+                                    }) {
+                                        HStack {
+                                            Image(systemName: getIconForResult(result))
+                                                .font(.body)
+                                                .foregroundColor(.gray)
+                                                .frame(width: 20)
+                                            
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(result.title)
+                                                    .font(.body)
+                                                    .foregroundColor(.white)
+                                                    .lineLimit(1)
+                                                if !result.subtitle.isEmpty {
+                                                    Text(result.subtitle)
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
+                                                        .lineLimit(1)
+                                                }
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    if result != searchResults.prefix(5).last {
+                                        Divider()
+                                            .background(Color.gray.opacity(0.2))
+                                            .padding(.horizontal, 16)
+                                    }
+                                }
+                            }
+                            .background(
+                                RoundedRectangle(cornerRadius: [.bottomLeft, .bottomRight], radius: 16)
+                                    .fill(Color.hopeDarkSecondary)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: [.bottomLeft, .bottomRight], radius: 16)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                        }
+                    }
                 }
             }
             .padding()
             .onTapGesture {
+                if !searchResults.isEmpty {
+                    isSearching = false
+                    searchResults = []
+                }
                 isInputActive = false
+            }
+        }
+        .onAppear {
+            // Set up the search completer
+            locationSearchCompleter.delegate = LocationSearchCompleterDelegate { results in
+                searchResults = results
             }
         }
         .toolbar {
@@ -581,8 +684,57 @@ struct StepTwoView: View {
                 Button("Done") {
                     isInputActive = false
                 }
-                .foregroundColor(Color(hex: "00D9B1"))
+                .foregroundColor(Color.hopeOrange)
             }
+        }
+    }
+    
+    // Helper functions
+    func selectLocation(_ result: MKLocalSearchCompletion) {
+        // Format the location based on the result
+        var formattedLocation = result.title
+        
+        // If subtitle contains additional info, append it
+        if !result.subtitle.isEmpty && !result.title.contains(result.subtitle) {
+            // Remove "United States" from subtitle
+            let cleanedSubtitle = result.subtitle
+                .replacingOccurrences(of: ", United States", with: "")
+                .replacingOccurrences(of: "United States", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Only append if there's meaningful content left
+            if !cleanedSubtitle.isEmpty && cleanedSubtitle != "," {
+                formattedLocation = "\(result.title), \(cleanedSubtitle)"
+            }
+        }
+        
+        location = formattedLocation
+        isSearching = false
+        searchResults = []
+        isInputActive = false
+    }
+    
+    func getIconForResult(_ result: MKLocalSearchCompletion) -> String {
+        let title = result.title.lowercased()
+        let subtitle = result.subtitle.lowercased()
+        
+        // Check for business types
+        if title.contains("starbucks") || title.contains("coffee") {
+            return "cup.and.saucer.fill"
+        } else if title.contains("costco") || title.contains("walmart") || title.contains("target") || title.contains("store") {
+            return "cart.fill"
+        } else if title.contains("restaurant") || title.contains("pizza") || title.contains("burger") {
+            return "fork.knife"
+        } else if title.contains("park") {
+            return "tree.fill"
+        } else if title.contains("hospital") || title.contains("medical") {
+            return "cross.fill"
+        } else if title.contains("school") || title.contains("university") || title.contains("college") {
+            return "graduationcap.fill"
+        } else if subtitle.contains("street") || subtitle.contains("avenue") || subtitle.contains("road") || subtitle.contains("drive") {
+            return "house.fill"
+        } else {
+            return "location.fill"
         }
     }
 }
@@ -591,6 +743,10 @@ struct StepThreeView: View {
     let isTradeItem: Bool
     @Binding var price: String
     @Binding var priceIsFirm: Bool
+    @Binding var lookingFor: String
+    @Binding var acceptableItems: String
+    @Binding var tradeSuggestions: String
+    @Binding var openToOffers: Bool
     @FocusState private var isInputActive: Bool
     
     var body: some View {
@@ -598,28 +754,145 @@ struct StepThreeView: View {
             VStack(spacing: 30) {
                 if isTradeItem {
                     // Trade content
-                    Image(systemName: "arrow.left.arrow.right.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(Color(hex: "00D9B1"))
-                        .padding(.top, 20)
-                    
-                    VStack(spacing: 16) {
-                        Text("What are you looking for?")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Text("Describe what you'd like to trade for")
-                            .font(.body)
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.gray)
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Header icon
+                            Image(systemName: "arrow.left.arrow.right.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(Color.hopeGreen)
+                                .padding(.top, 10)
+                            
+                            // Title
+                            Text("Trade Preferences")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            // What I'm looking for section
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("What I'm looking for", systemImage: "magnifyingglass")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                ZStack(alignment: .topLeading) {
+                                    if lookingFor.isEmpty {
+                                        Text("Describe items you'd like to trade for (e.g., electronics, books, toys)")
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 20)
+                                            .allowsHitTesting(false)
+                                    }
+                                    
+                                    TextEditor(text: $lookingFor)
+                                        .foregroundColor(.white)
+                                        .scrollContentBackground(.hidden)
+                                        .padding(12)
+                                        .frame(minHeight: 100)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .focused($isInputActive)
+                                }
+                            }
                             .padding(.horizontal)
-                        
-                        // Trade preferences would go here
-                        Text("Trade preferences coming soon!")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .italic()
+                            
+                            // What's acceptable section
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("What's acceptable", systemImage: "checkmark.circle")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                ZStack(alignment: .topLeading) {
+                                    if acceptableItems.isEmpty {
+                                        Text("List specific items or categories you're willing to accept")
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 20)
+                                            .allowsHitTesting(false)
+                                    }
+                                    
+                                    TextEditor(text: $acceptableItems)
+                                        .foregroundColor(.white)
+                                        .scrollContentBackground(.hidden)
+                                        .padding(12)
+                                        .frame(minHeight: 100)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .focused($isInputActive)
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            // Trade suggestions section
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("Other trade suggestions", systemImage: "lightbulb")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                ZStack(alignment: .topLeading) {
+                                    if tradeSuggestions.isEmpty {
+                                        Text("Any creative trade ideas or flexible options?")
+                                            .foregroundColor(.gray)
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 20)
+                                            .allowsHitTesting(false)
+                                    }
+                                    
+                                    TextEditor(text: $tradeSuggestions)
+                                        .foregroundColor(.white)
+                                        .scrollContentBackground(.hidden)
+                                        .padding(12)
+                                        .frame(minHeight: 100)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .focused($isInputActive)
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            // Trade flexibility toggle
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Open to all offers")
+                                        .font(.body)
+                                        .foregroundColor(.white)
+                                    Text("Let people know you're flexible")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $openToOffers)
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
+                                    .labelsHidden()
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white.opacity(0.05))
+                            )
+                            .padding(.horizontal)
+                            
+                            // Helper text
+                            VStack(spacing: 8) {
+                                Image(systemName: "info.circle")
+                                    .font(.title3)
+                                    .foregroundColor(Color.hopeGreen)
+                                
+                                Text("Be specific about what you want to increase your chances of a successful trade!")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal, 40)
+                            .padding(.bottom, 20)
+                        }
                     }
                 } else {
                     // Sale content
@@ -634,14 +907,14 @@ struct StepThreeView: View {
                             HStack {
                                 Text("$")
                                     .font(.title2)
-                                    .foregroundColor(Color(hex: "00D9B1"))
+                                    .foregroundColor(Color.hopeBlue)
                                 
                                 TextField("0", text: $price)
                                     .font(.title2)
                                     .foregroundColor(.white)
                                     .keyboardType(.decimalPad)
                                     .focused($isInputActive)
-                                    .onChange(of: price) { newValue in
+                                    .onChange(of: price) { _, newValue in
                                         // Allow only valid price format
                                         let filtered = newValue.filter { "0123456789.".contains($0) }
                                         if filtered.filter({ $0 == "." }).count > 1 {
@@ -668,7 +941,7 @@ struct StepThreeView: View {
                             Spacer()
                             
                             Toggle("", isOn: $priceIsFirm)
-                                .toggleStyle(SwitchToggleStyle(tint: Color(hex: "00D9B1")))
+                                .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
                                 .labelsHidden()
                         }
                         .padding()
@@ -694,7 +967,7 @@ struct StepThreeView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "heart.circle.fill")
                                 .font(.system(size: 60))
-                                .foregroundColor(Color(hex: "00D9B1"))
+                                .foregroundColor(Color.hopePink)
                             
                             Text("Support a Great Cause")
                                 .font(.headline)
@@ -708,7 +981,7 @@ struct StepThreeView: View {
                             
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(Color(hex: "00D9B1"))
+                                    .foregroundColor(Color.hopeGreen)
                                 Text("100% of fees donated")
                                     .foregroundColor(.white)
                             }
@@ -728,7 +1001,7 @@ struct StepThreeView: View {
                 Button("Done") {
                     isInputActive = false
                 }
-                .foregroundColor(Color(hex: "00D9B1"))
+                .foregroundColor(Color.hopeOrange)
             }
         }
     }
@@ -744,6 +1017,10 @@ struct StepFourView: View {
     let price: Double?
     let priceIsFirm: Bool
     let isTradeItem: Bool
+    let lookingFor: String
+    let acceptableItems: String
+    let tradeSuggestions: String
+    let openToOffers: Bool
     let onPost: () -> Void
     
     var body: some View {
@@ -770,28 +1047,50 @@ struct StepFourView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 16) {
-                    DetailRow(label: "Title", value: title)
+                    PostDetailRow(label: "Title", value: title)
                     if !description.isEmpty {
-                        DetailRow(label: "Description", value: description)
+                        PostDetailRow(label: "Description", value: description)
                     }
-                    DetailRow(label: "Category", value: category.rawValue)
-                    DetailRow(label: "Condition", value: condition.rawValue)
-                    DetailRow(label: "Location", value: location)
+                    PostDetailRow(label: "Category", value: category.rawValue)
+                    PostDetailRow(label: "Condition", value: condition.rawValue)
+                    PostDetailRow(label: "Location", value: location)
                     
                     if let price = price {
                         HStack {
-                            DetailRow(label: "Price", value: "$\(String(format: "%.2f", price))")
+                            PostDetailRow(label: "Price", value: "$\(String(format: "%.2f", price))")
                             if priceIsFirm {
                                 Text("FIRM")
                                     .font(.caption)
                                     .fontWeight(.bold)
-                                    .foregroundColor(Color(hex: "00D9B1"))
+                                    .foregroundColor(Color.hopeBlue)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 2)
                                     .background(
                                         RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color(hex: "00D9B1").opacity(0.2))
+                                            .fill(Color.hopeBlue.opacity(0.2))
                                     )
+                            }
+                        }
+                    }
+                    
+                    // Trade preferences
+                    if isTradeItem {
+                        if !lookingFor.isEmpty {
+                            PostDetailRow(label: "Looking for", value: lookingFor)
+                        }
+                        if !acceptableItems.isEmpty {
+                            PostDetailRow(label: "Will accept", value: acceptableItems)
+                        }
+                        if !tradeSuggestions.isEmpty {
+                            PostDetailRow(label: "Trade ideas", value: tradeSuggestions)
+                        }
+                        if openToOffers {
+                            HStack {
+                                Text("Open to offers")
+                                    .foregroundColor(.gray)
+                                Spacer()
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(Color.hopeGreen)
                             }
                         }
                     }
@@ -805,7 +1104,7 @@ struct StepFourView: View {
                         Spacer()
                         Text(isTradeItem ? "FREE" : "$1.00")
                             .font(.headline)
-                            .foregroundColor(Color(hex: "00D9B1"))
+                            .foregroundColor(isTradeItem ? Color.hopeGreen : Color.hopeBlue)
                     }
                 }
                 .padding()
@@ -833,7 +1132,7 @@ struct ProgressIndicator: View {
                 HStack(spacing: 0) {
                     if step > 1 {
                         Rectangle()
-                            .fill(step <= currentStep ? Color(hex: "00D9B1") : Color.gray.opacity(0.3))
+                            .fill(step <= currentStep ? (step == 1 ? Color.hopeOrange : step == 2 ? Color.hopeGreen : step == 3 ? Color.hopeBlue : Color.hopePink) : Color.gray.opacity(0.3))
                             .frame(height: 2)
                     }
                     
@@ -841,19 +1140,19 @@ struct ProgressIndicator: View {
                         Text("\(step)")
                             .font(.caption)
                             .fontWeight(.bold)
-                            .foregroundColor(step <= currentStep ? Color(hex: "00D9B1") : Color.gray)
+                            .foregroundColor(step <= currentStep ? (step == 1 ? Color.hopeOrange : step == 2 ? Color.hopeGreen : step == 3 ? Color.hopeBlue : Color.hopePink) : Color.gray)
                         
                         Text(steps[step - 1])
                             .font(.system(size: 10))
                             .fontWeight(.medium)
-                            .foregroundColor(step <= currentStep ? Color(hex: "00D9B1") : Color.gray)
+                            .foregroundColor(step <= currentStep ? (step == 1 ? Color.hopeOrange : step == 2 ? Color.hopeGreen : step == 3 ? Color.hopeBlue : Color.hopePink) : Color.gray)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
                     
                     if step < 4 {
                         Rectangle()
-                            .fill(step < currentStep ? Color(hex: "00D9B1") : Color.gray.opacity(0.3))
+                            .fill(step < currentStep ? (step == 1 ? Color.hopeOrange : step == 2 ? Color.hopeGreen : step == 3 ? Color.hopeBlue : Color.hopePink) : Color.gray.opacity(0.3))
                             .frame(height: 2)
                     }
                 }
@@ -868,20 +1167,39 @@ struct CategoryChip: View {
     let isSelected: Bool
     let action: () -> Void
     
+    var categoryColor: Color {
+        switch title {
+        case "Electronics":
+            return Color.hopeBlue
+        case "Clothing":
+            return Color.hopePink
+        case "Books":
+            return Color.hopePurple
+        case "Toys":
+            return Color.hopeOrange
+        case "Home & Garden":
+            return Color.hopeGreen
+        case "Sports":
+            return Color.hopeTeal
+        default:
+            return Color.hopeYellow
+        }
+    }
+    
     var body: some View {
         Button(action: action) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
-                .foregroundColor(isSelected ? Color(hex: "0A1929") : .white)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(isSelected ? Color(hex: "00D9B1") : Color.clear)
+                        .fill(isSelected ? categoryColor : Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(isSelected ? Color.clear : Color.gray.opacity(0.3), lineWidth: 1)
+                                .stroke(isSelected ? Color.clear : categoryColor.opacity(0.5), lineWidth: 1)
                         )
                 )
         }
@@ -901,23 +1219,23 @@ struct ConditionRow: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "00D9B1"))
+                        .foregroundColor(Color.hopeGreen)
                 }
             }
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color(hex: "00D9B1").opacity(0.1) : Color.clear)
+                    .fill(isSelected ? Color.hopeGreen.opacity(0.1) : Color.clear)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color(hex: "00D9B1") : Color.gray.opacity(0.3), lineWidth: 1)
+                            .stroke(isSelected ? Color.hopeGreen : Color.gray.opacity(0.3), lineWidth: 1)
                     )
             )
         }
     }
 }
 
-struct DetailRow: View {
+struct PostDetailRow: View {
     let label: String
     let value: String
     
@@ -962,7 +1280,7 @@ struct PhotoGridItem: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(hex: "00D9B1"), lineWidth: 3)
+                        .stroke(Color.hopeOrange, lineWidth: 3)
                         .opacity(isBeingDragged ? 1.0 : 0.0)
                 )
                 .animation(.easeInOut(duration: 0.2), value: isBeingDragged)
@@ -971,7 +1289,11 @@ struct PhotoGridItem: View {
             VStack {
                 HStack {
                     Circle()
-                        .fill(Color.black.opacity(0.6))
+                        .fill(index == 0 ? Color.hopeOrange.opacity(0.9) : 
+                              index == 1 ? Color.hopeGreen.opacity(0.9) : 
+                              index == 2 ? Color.hopeBlue.opacity(0.9) : 
+                              index == 3 ? Color.hopePink.opacity(0.9) : 
+                              Color.hopeOrange.opacity(0.9))
                         .frame(width: 24, height: 24)
                         .overlay(
                             Text("\(index + 1)")
@@ -995,7 +1317,7 @@ struct PhotoGridItem: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 4)
-                        .background(Color(hex: "00D9B1"))
+                        .background(Color.hopeOrange)
                         .cornerRadius(6)
                         .padding(6)
                 } else {
@@ -1179,3 +1501,20 @@ struct PhotoLibraryPicker: UIViewControllerRepresentable {
         }
     }
 }
+
+// Add this extension for corner radius
+extension RoundedRectangle {
+    init(cornerRadius corners: UIRectCorner, radius: CGFloat) {
+        if corners == [.allCorners] {
+            self.init(cornerRadius: radius)
+        } else if corners == [.topLeft, .topRight] {
+            self.init(cornerRadius: radius)
+        } else if corners == [.bottomLeft, .bottomRight] {
+            self.init(cornerRadius: radius)
+        } else {
+            self.init(cornerRadius: radius)
+        }
+    }
+}
+
+

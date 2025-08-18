@@ -401,6 +401,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HopeSwap needs access to your camera to take photos of items you want to list for trades.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HopeSwap uses your location to show nearby items and help connect you with local traders.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HopeSwap needs microphone access to use the camera.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "HopeSwap needs access to your photo library to select photos of items you want to list for trades.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -432,6 +433,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HopeSwap needs access to your camera to take photos of items you want to list for trades.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HopeSwap uses your location to show nearby items and help connect you with local traders.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HopeSwap needs microphone access to use the camera.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "HopeSwap needs access to your photo library to select photos of items you want to list for trades.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

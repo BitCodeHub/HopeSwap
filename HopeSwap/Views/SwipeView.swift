@@ -8,7 +8,7 @@ struct SwipeView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(gradient: Gradient(colors: [Color.pink.opacity(0.1), Color.blue.opacity(0.1)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+            Color.hopeDarkBg
                 .ignoresSafeArea()
             
             VStack {
@@ -16,14 +16,14 @@ struct SwipeView: View {
                     Text("HopeSwap")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(.pink)
+                        .foregroundColor(Color.hopeOrange)
                     
                     Spacer()
                     
                     Button(action: {}) {
                         Image(systemName: "heart.fill")
                             .font(.title2)
-                            .foregroundColor(.pink)
+                            .foregroundColor(Color.hopePink)
                     }
                 }
                 .padding()
@@ -100,8 +100,8 @@ struct SwipeView: View {
                     }) {
                         Image(systemName: "heart.circle.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.green)
-                            .shadow(color: .green.opacity(0.3), radius: 5, x: 0, y: 3)
+                            .foregroundColor(Color.hopeGreen)
+                            .shadow(color: Color.hopeGreen.opacity(0.3), radius: 5, x: 0, y: 3)
                     }
                     .scaleEffect((displayedItems.isEmpty ? 0.8 : 1.0) * (likeButtonPressed ? 0.95 : 1.0))
                     .disabled(displayedItems.isEmpty)
