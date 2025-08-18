@@ -8,8 +8,13 @@ import MapKit
 
 // Helper struct for drag and drop
 struct IndexedImage: Identifiable, Equatable, Codable, Transferable {
-    let id = UUID()
+    let id: UUID
     let index: Int
+    
+    init(index: Int) {
+        self.id = UUID()
+        self.index = index
+    }
     
     static func == (lhs: IndexedImage, rhs: IndexedImage) -> Bool {
         return lhs.id == rhs.id
@@ -33,7 +38,7 @@ struct PostItemFlow: View {
     // Item data
     @State private var title = ""
     @State private var description = ""
-    @State private var selectedCategory: Category = .other
+    @State private var selectedCategory: Category = .miscellaneous
     @State private var selectedCondition: Condition = .good
     @State private var location = ""
     @State private var selectedImages: [UIImage] = []
@@ -45,6 +50,12 @@ struct PostItemFlow: View {
     @State private var acceptableItems = ""
     @State private var tradeSuggestions = ""
     @State private var openToOffers = false
+    
+    // Donation preferences
+    @State private var showListingFee = true
+    @State private var donationAmount: Double = 1.0
+    @State private var selectedDonationOption = 0 // 0: $1, 1: $5, 2: $10, 3: Custom
+    @State private var customDonationAmount = ""
     
     @Environment(\.dismiss) var dismiss
     
@@ -116,6 +127,10 @@ struct PostItemFlow: View {
                                 acceptableItems: acceptableItems,
                                 tradeSuggestions: tradeSuggestions,
                                 openToOffers: openToOffers,
+                                showListingFee: $showListingFee,
+                                donationAmount: $donationAmount,
+                                selectedDonationOption: $selectedDonationOption,
+                                customDonationAmount: $customDonationAmount,
                                 onPost: postItem
                             )
                         default:
@@ -133,7 +148,12 @@ struct PostItemFlow: View {
                         )
                         
                         Button(action: nextStep) {
-                            Text(currentStep == 4 ? "Post Item" : "Next")
+                            Text(currentStep == 4 ? 
+                                (isTradeItem ? "Post Item" : 
+                                    (showListingFee ? "Post Item ($1 fee)" : 
+                                        (donationAmount > 0 ? "Post Item (donate $\(String(format: "%.0f", donationAmount)))" : "Post Item (free)")
+                                    )
+                                ) : "Next")
                                 .font(.headline)
                                 .foregroundColor(Color.hopeDarkBg)
                                 .frame(maxWidth: .infinity)
@@ -164,7 +184,11 @@ struct PostItemFlow: View {
         } message: {
             Text(isTradeItem ? 
                 "Your trade item has been listed successfully. Happy swapping!" :
-                "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!")
+                (showListingFee ? 
+                    "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!" :
+                    (donationAmount > 0 ? 
+                        "Your item has been listed successfully for free. Thank you for your $\(String(format: "%.0f", donationAmount)) donation to pediatric cancer research!" :
+                        "Your item has been listed successfully for free.")))
         }
     }
     
@@ -199,6 +223,13 @@ struct PostItemFlow: View {
     }
     
     func postItem() {
+        // Convert UIImages to base64 strings for storage
+        // In a real app, you would upload these to a server and get URLs back
+        let imageStrings = selectedImages.compactMap { image -> String? in
+            guard let data = image.jpegData(compressionQuality: 0.7) else { return nil }
+            return "data:image/jpeg;base64,\(data.base64EncodedString())"
+        }
+        
         let newItem = Item(
             title: title,
             description: description,
@@ -212,7 +243,8 @@ struct PostItemFlow: View {
             lookingFor: isTradeItem ? lookingFor : nil,
             acceptableItems: isTradeItem ? acceptableItems : nil,
             tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
-            openToOffers: isTradeItem ? openToOffers : false
+            openToOffers: isTradeItem ? openToOffers : false,
+            images: imageStrings
         )
         
         dataManager.addItem(newItem)
@@ -532,6 +564,7 @@ struct StepTwoView: View {
     @StateObject private var locationSearchCompleter = LocationSearchCompleter()
     @State private var searchResults: [MKLocalSearchCompletion] = []
     @State private var isSearching = false
+    @State private var showCategorySelection = false
     
     var body: some View {
         ScrollView {
@@ -544,11 +577,42 @@ struct StepTwoView: View {
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(Category.allCases, id: \.self) { cat in
+                            // Default categories to show
+                            let defaultCategories: [Category] = [
+                                .electronics,
+                                .furniture,
+                                .homeKitchen,
+                                .sportingGoods,
+                                .toysGames
+                            ]
+                            
+                            // Include selected category if it's not in the default list
+                            let displayCategories = defaultCategories.contains(category) ? defaultCategories : defaultCategories + [category]
+                            
+                            ForEach(displayCategories, id: \.self) { cat in
                                 CategoryChip(
                                     title: cat.rawValue,
                                     isSelected: category == cat,
                                     action: { category = cat }
+                                )
+                            }
+                            
+                            // More button with chevron
+                            Button(action: { showCategorySelection = true }) {
+                                HStack(spacing: 4) {
+                                    Text("More")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.gray.opacity(0.3))
                                 )
                             }
                         }
@@ -686,6 +750,9 @@ struct StepTwoView: View {
                 }
                 .foregroundColor(Color.hopeOrange)
             }
+        }
+        .sheet(isPresented: $showCategorySelection) {
+            CategorySelectionView(selectedCategory: $category)
         }
     }
     
@@ -1021,7 +1088,13 @@ struct StepFourView: View {
     let acceptableItems: String
     let tradeSuggestions: String
     let openToOffers: Bool
+    @Binding var showListingFee: Bool
+    @Binding var donationAmount: Double
+    @Binding var selectedDonationOption: Int
+    @Binding var customDonationAmount: String
     let onPost: () -> Void
+    
+    @FocusState private var isCustomAmountFocused: Bool
     
     var body: some View {
         ScrollView {
@@ -1046,6 +1119,7 @@ struct StepFourView: View {
                     .frame(height: 100)
                 }
                 
+                // Listing details
                 VStack(alignment: .leading, spacing: 16) {
                     PostDetailRow(label: "Title", value: title)
                     if !description.isEmpty {
@@ -1094,17 +1168,275 @@ struct StepFourView: View {
                             }
                         }
                     }
-                    
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.05))
+                )
+                
+                // Donation Section - Only show for non-trade items
+                if !isTradeItem {
+                    VStack(spacing: 20) {
+                        // Header with heart icon
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(red: 0.91, green: 0.29, blue: 0.39))
+                                    .frame(width: 80, height: 80)
+                                
+                                Image(systemName: "heart.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(Color.hopeDarkBg)
+                            }
+                            
+                            Text("Make a Difference")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            Text("100% of listing fees support pediatric cancer research")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        
+                        // Toggle for listing fee
+                        VStack(spacing: 16) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Listing Fee")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                    Text(showListingFee ? "$1 donation to charity" : "List for free")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $showListingFee)
+                                    .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
+                                    .scaleEffect(0.9)
+                                    .onChange(of: showListingFee) { _, newValue in
+                                        if newValue {
+                                            // Reset donation when turning listing fee back on
+                                            donationAmount = 1.0
+                                            selectedDonationOption = 0
+                                            customDonationAmount = ""
+                                        } else {
+                                            // Reset donation to 0 when making it free
+                                            donationAmount = 0
+                                            selectedDonationOption = -1
+                                            customDonationAmount = ""
+                                        }
+                                    }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.05))
+                            )
+                            
+                            // Donation options when toggle is OFF (free listing)
+                            if !showListingFee {
+                                VStack(spacing: 12) {
+                                    // Encourage donation when listing for free
+                                    VStack(spacing: 8) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "gift.fill")
+                                                .font(.title2)
+                                                .foregroundColor(Color.hopePink)
+                                            
+                                            Text("Consider making a donation")
+                                                .font(.headline)
+                                                .foregroundColor(.white)
+                                        }
+                                        
+                                        Text("Your generosity helps children fighting cancer")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .padding(.bottom, 8)
+                                    
+                                    // Donation amount buttons
+                                    HStack(spacing: 12) {
+                                        DonationButton(
+                                            amount: "$1",
+                                            isSelected: selectedDonationOption == 0,
+                                            action: {
+                                                selectedDonationOption = 0
+                                                donationAmount = 1.0
+                                                isCustomAmountFocused = false
+                                            }
+                                        )
+                                        
+                                        DonationButton(
+                                            amount: "$5",
+                                            isSelected: selectedDonationOption == 1,
+                                            action: {
+                                                selectedDonationOption = 1
+                                                donationAmount = 5.0
+                                                isCustomAmountFocused = false
+                                            }
+                                        )
+                                        
+                                        DonationButton(
+                                            amount: "$10",
+                                            isSelected: selectedDonationOption == 2,
+                                            action: {
+                                                selectedDonationOption = 2
+                                                donationAmount = 10.0
+                                                isCustomAmountFocused = false
+                                            }
+                                        )
+                                        
+                                        // Custom amount
+                                        Button(action: {
+                                            selectedDonationOption = 3
+                                            isCustomAmountFocused = true
+                                        }) {
+                                            if selectedDonationOption == 3 {
+                                                HStack(spacing: 4) {
+                                                    Text("$")
+                                                        .foregroundColor(.white)
+                                                    TextField("0", text: $customDonationAmount)
+                                                        .keyboardType(.decimalPad)
+                                                        .foregroundColor(.white)
+                                                        .multilineTextAlignment(.center)
+                                                        .frame(width: 40)
+                                                        .focused($isCustomAmountFocused)
+                                                        .onChange(of: customDonationAmount) { _, newValue in
+                                                            if let amount = Double(newValue), amount > 0 {
+                                                                donationAmount = amount
+                                                            }
+                                                        }
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 12)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 12)
+                                                        .fill(Color.hopeGreen)
+                                                )
+                                            } else {
+                                                Text("Other")
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                                    .foregroundColor(.white)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 12)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                    )
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 100% donation message
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.body)
+                                            .foregroundColor(Color.hopeGreen)
+                                        
+                                        Text("100% of fees donated")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(Color.hopeGreen)
+                                    }
+                                    .padding(.top, 8)
+                                    
+                                    // Hyundai Hope on Wheels with link
+                                    VStack(spacing: 8) {
+                                        Text("Hyundai Hope on Wheels")
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
+                                            .italic()
+                                        
+                                        Link(destination: URL(string: "https://hyundaihopeonwheels.org/our-story/")!) {
+                                            HStack(spacing: 4) {
+                                                Text("Learn more about our mission")
+                                                    .font(.caption)
+                                                    .foregroundColor(Color.hopeBlue)
+                                                    .underline()
+                                                
+                                                Image(systemName: "arrow.up.right.square")
+                                                    .font(.caption)
+                                                    .foregroundColor(Color.hopeBlue)
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color.hopePink.opacity(0.1), 
+                                                Color.hopePurple.opacity(0.1)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.hopePink.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale))
+                            }
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white.opacity(0.05))
+                        )
+                    }
+                    .animation(.easeInOut, value: showListingFee)
+                }
+                
+                // Final summary
+                VStack(spacing: 12) {
                     Divider()
                         .background(Color.gray.opacity(0.3))
                     
                     HStack {
-                        Text(isTradeItem ? "Trade Type" : "Listing Fee")
-                            .foregroundColor(.gray)
-                        Spacer()
-                        Text(isTradeItem ? "FREE" : "$1.00")
+                        Text("Total")
                             .font(.headline)
-                            .foregroundColor(isTradeItem ? Color.hopeGreen : Color.hopeBlue)
+                            .foregroundColor(.white)
+                        Spacer()
+                        if isTradeItem {
+                            Text("FREE")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(Color.hopeGreen)
+                        } else {
+                            Text(showListingFee ? "$1.00" : (donationAmount > 0 ? "$\(String(format: "%.2f", donationAmount)) donation" : "FREE"))
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(showListingFee ? Color.hopeBlue : Color.hopeGreen)
+                        }
+                    }
+                    
+                    if !isTradeItem {
+                        if showListingFee {
+                            Text("Goes to pediatric cancer research")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        } else if donationAmount > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "heart.fill")
+                                    .font(.caption)
+                                    .foregroundColor(Color.hopePink)
+                                Text("Thank you for your generous donation!")
+                                    .font(.caption)
+                                    .foregroundColor(Color.hopePink)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
                     }
                 }
                 .padding()
@@ -1114,6 +1446,30 @@ struct StepFourView: View {
                 )
             }
             .padding()
+        }
+        .onTapGesture {
+            isCustomAmountFocused = false
+        }
+    }
+}
+
+struct DonationButton: View {
+    let amount: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(amount)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? .white : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.hopeGreen : Color.gray.opacity(0.3))
+                )
         }
     }
 }
@@ -1168,21 +1524,24 @@ struct CategoryChip: View {
     let action: () -> Void
     
     var categoryColor: Color {
+        // Match colors with the categories we're displaying
         switch title {
-        case "Electronics":
-            return Color.hopeBlue
-        case "Clothing":
-            return Color.hopePink
-        case "Books":
-            return Color.hopePurple
-        case "Toys":
-            return Color.hopeOrange
-        case "Home & Garden":
-            return Color.hopeGreen
-        case "Sports":
-            return Color.hopeTeal
-        default:
-            return Color.hopeYellow
+        case "Electronics": return Color.hopeBlue
+        case "Furniture": return Color.brown
+        case "Home & Kitchen": return Color.hopeGreen
+        case "Sporting Goods": return Color.red
+        case "Toys & Games": return Color.hopeOrange
+        case "Books, Movies & Music": return Color.hopePurple
+        case "Menswear", "Womenswear", "Kidswear & Baby": return Color.hopePink
+        case "Vehicles", "Auto Parts": return Color.orange
+        case "Health & Beauty": return Color.pink
+        case "Pet Supplies": return Color.yellow
+        case "Arts & Crafts": return Color.purple
+        case "Jewelry & Watches": return Color.cyan
+        case "Musical Instruments": return Color.indigo
+        case "Patio & Garden": return Color.hopeGreen
+        case "Home Improvement": return Color.hopeGreen
+        default: return Color.gray
         }
     }
     
@@ -1382,18 +1741,6 @@ extension Color {
     }
 }
 
-extension View {
-    func placeholder<Content: View>(
-        when shouldShow: Bool,
-        alignment: Alignment = .leading,
-        @ViewBuilder placeholder: () -> Content) -> some View {
-
-        ZStack(alignment: alignment) {
-            placeholder().opacity(shouldShow ? 1 : 0)
-            self
-        }
-    }
-}
 
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var images: [UIImage]

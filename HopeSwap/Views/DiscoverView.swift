@@ -10,6 +10,10 @@ struct DiscoverView: View {
     @State private var zipCode = ""
     @State private var filteredItems: [Item] = []
     @State private var searchedLocation = ""
+    @State private var showCategorySelection = false
+    @State private var selectedCategory: Category? = nil
+    @State private var searchText = ""
+    @State private var showSearchBar = false
     
     let tabs = ["Sell", "For you", "Local", "More"]
     let columns = [
@@ -26,35 +30,139 @@ struct DiscoverView: View {
                 VStack(spacing: 0) {
                     // Custom header
                     VStack(spacing: 16) {
-                        // Tab selector
+                        // Top bar with tabs and search
                         HStack(spacing: 0) {
-                            ForEach(tabs, id: \.self) { tab in
-                                TabButton(
-                                    title: tab,
-                                    isSelected: selectedTab == tab,
-                                    action: { selectedTab = tab }
-                                )
+                            // Tab selector on the left
+                            HStack(spacing: 0) {
+                                ForEach(tabs, id: \.self) { tab in
+                                    TabButton(
+                                        title: tab,
+                                        isSelected: selectedTab == tab,
+                                        showChevron: tab == "More",
+                                        action: { 
+                                            selectedTab = tab
+                                            if tab == "More" {
+                                                showCategorySelection = true
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            // Search icon on the right
+                            Button(action: { 
+                                withAnimation {
+                                    showSearchBar.toggle()
+                                    if !showSearchBar {
+                                        searchText = ""
+                                        filterItems()
+                                    }
+                                }
+                            }) {
+                                Image(systemName: showSearchBar ? "xmark" : "magnifyingglass")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
                             }
                         }
                         .padding(.horizontal)
                         
-                        // Title and location
-                        HStack {
-                            Text("Today's picks")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            Button(action: { showLocationPicker = true }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "location.fill")
-                                        .font(.caption)
-                                    Text(locationManager.locationString)
-                                        .font(.subheadline)
+                        // Search bar (when visible)
+                        if showSearchBar {
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.gray)
+                                    .font(.body)
+                                
+                                TextField("", text: $searchText)
+                                    .placeholder(when: searchText.isEmpty) {
+                                        Text("Search for items...")
+                                            .foregroundColor(.gray)
+                                    }
+                                    .foregroundColor(.white)
+                                    .autocapitalization(.none)
+                                    .disableAutocorrection(true)
+                                    .onChange(of: searchText) {
+                                        filterItems()
+                                    }
+                                    .onSubmit {
+                                        filterItems()
+                                    }
+                                
+                                if !searchText.isEmpty {
+                                    Button(action: { 
+                                        searchText = ""
+                                        filterItems()
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                            .font(.body)
+                                    }
                                 }
-                                .foregroundColor(Color.hopeOrange)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(Color.white.opacity(0.1))
+                            )
+                            .padding(.horizontal)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+                        
+                        // Title and location
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Today's picks")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Button(action: { showLocationPicker = true }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "location.fill")
+                                            .font(.caption)
+                                        Text(locationManager.locationString)
+                                            .font(.subheadline)
+                                    }
+                                    .foregroundColor(Color.hopeOrange)
+                                }
+                            }
+                            
+                            // Filter indicators
+                            VStack(alignment: .leading, spacing: 4) {
+                                if let category = selectedCategory {
+                                    HStack {
+                                        Text("Filtered by: \(category.rawValue)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                        
+                                        Button(action: { 
+                                            selectedCategory = nil
+                                            filterItems()
+                                        }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                }
+                                
+                                if !searchText.isEmpty {
+                                    HStack {
+                                        Text("Searching: \"\(searchText)\"")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                        
+                                        Text("(\(filteredItems.count) results)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -121,6 +229,12 @@ struct DiscoverView: View {
                 }
             )
         }
+        .sheet(isPresented: $showCategorySelection) {
+            CategorySelectionView(selectedCategory: $selectedCategory)
+                .onDisappear {
+                    filterItems()
+                }
+        }
     }
     
     private func updateLocationFromZipCode(_ zip: String) {
@@ -168,16 +282,46 @@ struct DiscoverView: View {
     }
     
     private func filterItemsByLocation(_ city: String) {
-        let cityName = city.components(separatedBy: ",").first ?? ""
-        filteredItems = dataManager.items.filter { item in
-            item.location.lowercased().contains(cityName.lowercased())
+        filterItems()
+    }
+    
+    private func filterItems() {
+        var items = dataManager.items
+        
+        // Filter by location if not using current location or if there's a searched location
+        if !locationManager.isUsingCurrentLocation || !searchedLocation.isEmpty {
+            let cityName = (searchedLocation.isEmpty ? locationManager.locationString : searchedLocation)
+                .components(separatedBy: ",").first ?? ""
+            if !cityName.isEmpty && !cityName.contains("Unknown ZIP") {
+                items = items.filter { item in
+                    item.location.lowercased().contains(cityName.lowercased())
+                }
+            }
         }
+        
+        // Filter by category if one is selected
+        if let category = selectedCategory {
+            items = items.filter { $0.category == category }
+        }
+        
+        // Filter by search text if provided
+        if !searchText.isEmpty {
+            let searchLower = searchText.lowercased()
+            items = items.filter { item in
+                item.title.lowercased().contains(searchLower) ||
+                item.description.lowercased().contains(searchLower) ||
+                item.category.rawValue.lowercased().contains(searchLower)
+            }
+        }
+        
+        filteredItems = items
     }
     
     private func switchToCurrentLocation() {
         locationManager.isUsingCurrentLocation = true
         locationManager.locationString = locationManager.currentUserLocation
-        filterItemsByLocation(locationManager.currentUserLocation)
+        searchedLocation = ""
+        filterItems()
         
         // Clear saved search
         UserDefaults.standard.removeObject(forKey: "lastSearchedZipCode")
@@ -188,23 +332,33 @@ struct DiscoverView: View {
 struct TabButton: View {
     let title: String
     let isSelected: Bool
+    var showChevron: Bool = false
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.headline)
-                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(
-                    Group {
-                        if isSelected {
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(tabColor(for: title))
-                        }
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                
+                if showChevron {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                }
+            }
+            .padding(.horizontal, title == "For you" ? 14 : 16)
+            .padding(.vertical, 10)
+            .fixedSize(horizontal: true, vertical: false)
+            .background(
+                Group {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(tabColor(for: title))
                     }
-                )
+                }
+            )
         }
     }
     
@@ -235,40 +389,56 @@ struct DiscoverItemCard: View {
         }
     }
     
+    var imagePlaceholder: some View {
+        Rectangle()
+            .fill(Color.gray.opacity(0.3))
+            .frame(height: 200)
+            .overlay(
+                Image(systemName: "photo")
+                    .font(.system(size: 40))
+                    .foregroundColor(.gray)
+            )
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Image with overlay badges
             ZStack(alignment: .topLeading) {
-                if let firstImage = item.images.first {
-                    AsyncImage(url: URL(string: firstImage)) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(height: 200)
-                            .clipped()
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 200)
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.gray)
-                            )
+                // Background image
+                Group {
+                    if let firstImage = item.images.first {
+                        if firstImage.starts(with: "data:image") {
+                            // Handle base64 images
+                            if let data = Data(base64Encoded: String(firstImage.dropFirst("data:image/jpeg;base64,".count))),
+                               let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(minWidth: 0, maxWidth: .infinity)
+                                    .frame(height: 200)
+                            } else {
+                                imagePlaceholder
+                            }
+                        } else {
+                            // Handle URL images
+                            AsyncImage(url: URL(string: firstImage)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(minWidth: 0, maxWidth: .infinity)
+                                    .frame(height: 200)
+                            } placeholder: {
+                                imagePlaceholder
+                            }
+                        }
+                    } else {
+                        imagePlaceholder
                     }
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 200)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .font(.system(size: 40))
-                                .foregroundColor(.gray)
-                        )
                 }
+                .clipped()
                 
                 // Badges
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
                     if item.isJustListed {
                         Badge(text: "Just listed", backgroundColor: .white, textColor: .black)
                     }
@@ -276,8 +446,10 @@ struct DiscoverItemCard: View {
                         Badge(text: "Nearby", backgroundColor: .white, textColor: .black)
                     }
                 }
-                .padding(8)
+                .padding(6)
             }
+            .frame(height: 200)
+            .clipped()
             
             // Item details
             VStack(alignment: .leading, spacing: 4) {
@@ -303,6 +475,7 @@ struct DiscoverItemCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.hopeDarkSecondary)
         }
+        .background(Color.hopeDarkSecondary)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
     }
@@ -315,13 +488,13 @@ struct Badge: View {
     
     var body: some View {
         Text(text)
-            .font(.caption)
-            .fontWeight(.semibold)
+            .font(.caption2)
+            .fontWeight(.medium)
             .foregroundColor(textColor)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
             .background(
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: 3)
                     .fill(backgroundColor)
             )
     }

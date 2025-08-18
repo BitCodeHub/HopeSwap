@@ -63,11 +63,17 @@ struct ContentView: View {
                     }
                     .tag(3)
                 
-                ProfileView()
+                DonationView()
                     .tabItem {
-                        Label("Profile", systemImage: "person.fill")
+                        Label("Donation", systemImage: "gift.fill")
                     }
                     .tag(4)
+                
+                ProfileView()
+                    .tabItem {
+                        Label("Me", systemImage: "person.fill")
+                    }
+                    .tag(5)
             }
             .accentColor(Color.hopeOrange)
         }

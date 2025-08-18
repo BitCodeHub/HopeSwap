@@ -28,20 +28,20 @@ struct CardView: View {
     
     func categoryColor(for category: Category) -> Color {
         switch category {
-        case .electronics:
-            return Color.hopeBlue
-        case .clothing:
-            return Color.hopePink
-        case .books:
-            return Color.hopePurple
-        case .toys:
-            return Color.hopeOrange
-        case .home:
-            return Color.hopeGreen
-        case .sports:
-            return Color.hopeTeal
-        case .other:
-            return Color.hopeYellow
+        case .electronics: return Color.hopeBlue
+        case .booksMoviesMusic: return Color.hopePurple
+        case .toysGames: return Color.hopeOrange
+        case .homeKitchen, .homeImprovement, .patioGarden: return Color.hopeGreen
+        case .sportingGoods: return Color.hopeTeal
+        case .menswear, .womenswear, .kidswearBaby: return Color.hopePink
+        case .vehicles, .autoParts: return Color.orange
+        case .healthBeauty: return Color.pink
+        case .furniture: return Color.brown
+        case .petSupplies: return Color.yellow
+        case .artsCrafts: return Color.purple
+        case .jewelryWatches: return Color.cyan
+        case .musicalInstruments: return Color.indigo
+        default: return Color.hopeYellow
         }
     }
     

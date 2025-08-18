@@ -6,7 +6,7 @@ struct PostItemView: View {
     @Binding var selectedTab: Int
     @State private var title = ""
     @State private var description = ""
-    @State private var selectedCategory: Category = .other
+    @State private var selectedCategory: Category = .miscellaneous
     @State private var selectedCondition: Condition = .good
     @State private var location = ""
     @State private var selectedImages: [PhotosPickerItem] = []
@@ -215,7 +215,7 @@ struct PostItemView: View {
     func clearForm() {
         title = ""
         description = ""
-        selectedCategory = .other
+        selectedCategory = .miscellaneous
         selectedCondition = .good
         location = ""
         selectedImages = []

@@ -45,13 +45,14 @@ struct Item: Identifiable, Codable, Equatable {
          lookingFor: String? = nil,
          acceptableItems: String? = nil,
          tradeSuggestions: String? = nil,
-         openToOffers: Bool = false) {
+         openToOffers: Bool = false,
+         images: [String] = []) {
         self.id = id
         self.title = title
         self.description = description
         self.category = category
         self.condition = condition
-        self.images = []
+        self.images = images
         self.userId = userId
         self.postedDate = postedDate
         self.status = .available
@@ -68,13 +69,44 @@ struct Item: Identifiable, Codable, Equatable {
 }
 
 enum Category: String, Codable, CaseIterable {
+    case antiquesCollectibles = "Antiques & Collectibles"
+    case artsCrafts = "Arts & Crafts"
+    case autoParts = "Auto Parts"
+    case baby = "Baby"
+    case booksMoviesMusic = "Books, Movies & Music"
     case electronics = "Electronics"
-    case clothing = "Clothing"
-    case books = "Books"
-    case toys = "Toys"
-    case home = "Home & Garden"
-    case sports = "Sports"
-    case other = "Other"
+    case furniture = "Furniture"
+    case garageSale = "Garage Sale"
+    case healthBeauty = "Health & Beauty"
+    case homeKitchen = "Home & Kitchen"
+    case homeImprovement = "Home Improvement"
+    case housingForSale = "Housing for Sale"
+    case jewelryWatches = "Jewelry & Watches"
+    case kidswearBaby = "Kidswear & Baby"
+    case luggageBags = "Luggage & Bags"
+    case menswear = "Menswear"
+    case miscellaneous = "Miscellaneous"
+    case musicalInstruments = "Musical Instruments"
+    case patioGarden = "Patio & Garden"
+    case petSupplies = "Pet Supplies"
+    case rentals = "Rentals"
+    case sportingGoods = "Sporting Goods"
+    case toysGames = "Toys & Games"
+    case vehicles = "Vehicles"
+    case womenswear = "Womenswear"
+    
+    // Mapping to support existing data
+    static func fromOldCategory(_ oldCategory: String) -> Category {
+        switch oldCategory {
+        case "Electronics": return .electronics
+        case "Clothing": return .miscellaneous
+        case "Books": return .booksMoviesMusic
+        case "Toys": return .toysGames
+        case "Home & Garden": return .homeKitchen
+        case "Sports": return .sportingGoods
+        default: return .miscellaneous
+        }
+    }
 }
 
 enum Condition: String, Codable, CaseIterable {
