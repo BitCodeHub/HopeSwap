@@ -1,0 +1,753 @@
+import SwiftUI
+import PhotosUI
+
+struct NeedHelpFlow: View {
+    @EnvironmentObject var dataManager: DataManager
+    @Binding var selectedTab: Int
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var currentStep = 1
+    @State private var showingImagePicker = false
+    @State private var showingCamera = false
+    @State private var showingSuccessAlert = false
+    
+    // Help request data
+    @State private var title = ""
+    @State private var description = ""
+    @State private var selectedHelpType: HelpType = .moving
+    @State private var urgency: Urgency = .flexible
+    @State private var location = ""
+    @State private var selectedImages: [UIImage] = []
+    
+    // Timing preferences
+    @State private var needByDate = Date()
+    @State private var duration = ""
+    @State private var peopleNeeded = 1
+    @State private var skillsRequired = ""
+    
+    // What can offer
+    @State private var canOfferMeal = false
+    @State private var canOfferGas = false
+    @State private var canOfferPayment = false
+    @State private var paymentAmount = ""
+    @State private var canTradeService = false
+    @State private var tradeServiceDetails = ""
+    @State private var canWriteReview = false
+    
+    enum HelpType: String, CaseIterable {
+        case moving = "Moving"
+        case repair = "Repair"
+        case transportation = "Transportation"
+        case technology = "Technology"
+        case yard = "Yard Work"
+        case cleaning = "Cleaning"
+        case petCare = "Pet Care"
+        case childCare = "Child Care"
+        case shopping = "Shopping"
+        case other = "Other"
+        
+        var icon: String {
+            switch self {
+            case .moving: return "box.truck"
+            case .repair: return "wrench.and.screwdriver"
+            case .transportation: return "car"
+            case .technology: return "desktopcomputer"
+            case .yard: return "leaf"
+            case .cleaning: return "sparkles"
+            case .petCare: return "pawprint"
+            case .childCare: return "figure.and.child.holdinghands"
+            case .shopping: return "cart"
+            case .other: return "questionmark.circle"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .moving: return Color.hopeBlue
+            case .repair: return Color.hopeOrange
+            case .transportation: return Color.hopePurple
+            case .technology: return Color.hopeGreen
+            case .yard: return Color.mint
+            case .cleaning: return Color.hopePink
+            case .petCare: return Color.brown
+            case .childCare: return Color.yellow
+            case .shopping: return Color.red
+            case .other: return Color.gray
+            }
+        }
+    }
+    
+    enum Urgency: String, CaseIterable {
+        case urgent = "Urgent (Today)"
+        case soon = "This Week"
+        case flexible = "Flexible"
+        case planned = "Planning Ahead"
+        
+        var color: Color {
+            switch self {
+            case .urgent: return Color.red
+            case .soon: return Color.hopeOrange
+            case .flexible: return Color.hopeGreen
+            case .planned: return Color.hopeBlue
+            }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.hopeDarkBg
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header
+                    headerView
+                    
+                    // Progress bar
+                    ProgressBar(currentStep: currentStep, totalSteps: 4)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
+                    
+                    // Content
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            switch currentStep {
+                            case 1:
+                                stepOneContent
+                            case 2:
+                                stepTwoContent
+                            case 3:
+                                stepThreeContent
+                            case 4:
+                                stepFourContent
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 100)
+                    }
+                    
+                    // Bottom navigation
+                    bottomNavigation
+                }
+            }
+            .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(images: $selectedImages, sourceType: .photoLibrary, maxCount: 6)
+        }
+        .sheet(isPresented: $showingCamera) {
+            ImagePicker(images: $selectedImages, sourceType: .camera, maxCount: 6)
+        }
+        .alert("Help Request Posted!", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                dismiss()
+                selectedTab = 0
+            }
+        } message: {
+            Text("Your request has been posted! Community members will be notified and can offer to help.")
+        }
+    }
+    
+    var headerView: some View {
+        HStack {
+            Button(action: { 
+                if currentStep > 1 {
+                    currentStep -= 1
+                } else {
+                    dismiss()
+                }
+            }) {
+                Image(systemName: currentStep > 1 ? "chevron.left" : "xmark")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 4) {
+                Text("I Need Help")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text("Step \(currentStep) of 4")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            // Placeholder for alignment
+            Color.clear
+                .frame(width: 44, height: 44)
+        }
+        .padding()
+    }
+    
+    var stepOneContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Title section
+            VStack(alignment: .leading, spacing: 12) {
+                Label("What do you need help with?", systemImage: "hand.raised")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                TextField("", text: $title)
+                    .placeholder(when: title.isEmpty) {
+                        Text("e.g., Help moving furniture, Fix leaky faucet...")
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+            }
+            
+            // Description section
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Tell us more details", systemImage: "text.alignleft")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                TextEditor(text: $description)
+                    .placeholder(when: description.isEmpty) {
+                        Text("Describe what you need help with, any specific requirements, tools needed...")
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 8)
+                    }
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .frame(minHeight: 120)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                    .scrollContentBackground(.hidden)
+            }
+            
+            // Photos section (optional)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Add photos", systemImage: "camera")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text("(optional)")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                
+                Text("Show what needs to be done")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                PhotoSelectionGrid(
+                    selectedImages: $selectedImages,
+                    showingImagePicker: $showingImagePicker,
+                    showingCamera: $showingCamera
+                )
+            }
+        }
+    }
+    
+    var stepTwoContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Help type section
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Type of help needed", systemImage: "square.grid.3x3")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ForEach(HelpType.allCases, id: \.self) { type in
+                        HelpTypeButton(
+                            type: type,
+                            isSelected: selectedHelpType == type,
+                            action: { selectedHelpType = type }
+                        )
+                    }
+                }
+            }
+            
+            // Urgency section
+            VStack(alignment: .leading, spacing: 12) {
+                Label("How urgent is this?", systemImage: "clock")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                VStack(spacing: 8) {
+                    ForEach(Urgency.allCases, id: \.self) { urgencyLevel in
+                        UrgencyButton(
+                            urgency: urgencyLevel,
+                            isSelected: urgency == urgencyLevel,
+                            action: { urgency = urgencyLevel }
+                        )
+                    }
+                }
+            }
+            
+            // Skills required
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Any specific skills needed?", systemImage: "hammer")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                TextField("", text: $skillsRequired)
+                    .placeholder(when: skillsRequired.isEmpty) {
+                        Text("e.g., Plumbing experience, Strong for lifting...")
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+            }
+        }
+    }
+    
+    var stepThreeContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // When section
+            VStack(alignment: .leading, spacing: 12) {
+                Label("When do you need help?", systemImage: "calendar")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                if urgency != .flexible && urgency != .planned {
+                    // Date picker for urgent/soon
+                    DatePicker(
+                        "Need by",
+                        selection: $needByDate,
+                        in: Date()...,
+                        displayedComponents: urgency == .urgent ? [.hourAndMinute] : [.date]
+                    )
+                    .datePickerStyle(.compact)
+                    .accentColor(Color.hopeOrange)
+                    .colorScheme(.dark)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                } else {
+                    Text("You selected flexible timing")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                }
+            }
+            
+            // Duration and people needed
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Help details", systemImage: "person.2")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                // Duration
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Estimated duration")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    
+                    TextField("", text: $duration)
+                        .placeholder(when: duration.isEmpty) {
+                            Text("e.g., 2 hours, Half day...")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                }
+                
+                // People needed
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("People needed: \(peopleNeeded)")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Stepper("", value: $peopleNeeded, in: 1...10)
+                            .labelsHidden()
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                }
+            }
+            
+            // Location
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Where do you need help?", systemImage: "location")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                TextField("", text: $location)
+                    .placeholder(when: location.isEmpty) {
+                        Text("Enter address or general area")
+                            .foregroundColor(.gray)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+            }
+        }
+    }
+    
+    var stepFourContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // What can you offer
+            VStack(alignment: .leading, spacing: 12) {
+                Label("What can you offer in return?", systemImage: "gift")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                Text("Let helpers know how you can thank them")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                VStack(spacing: 12) {
+                    // Meal option
+                    OfferToggle(
+                        title: "Provide a meal",
+                        subtitle: "Home cooked or takeout",
+                        icon: "fork.knife",
+                        isOn: $canOfferMeal,
+                        color: Color.hopeOrange
+                    )
+                    
+                    // Gas money
+                    OfferToggle(
+                        title: "Gas money",
+                        subtitle: "For transportation help",
+                        icon: "fuelpump",
+                        isOn: $canOfferGas,
+                        color: Color.hopeGreen
+                    )
+                    
+                    // Payment
+                    VStack(spacing: 8) {
+                        OfferToggle(
+                            title: "Cash payment",
+                            subtitle: "Fair compensation",
+                            icon: "dollarsign.circle",
+                            isOn: $canOfferPayment,
+                            color: Color.hopeBlue
+                        )
+                        
+                        if canOfferPayment {
+                            TextField("", text: $paymentAmount)
+                                .placeholder(when: paymentAmount.isEmpty) {
+                                    Text("Enter amount (e.g., $20/hour)")
+                                        .foregroundColor(.gray)
+                                }
+                                .foregroundColor(.white)
+                                .keyboardType(.decimalPad)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.hopeDarkSecondary)
+                                )
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    
+                    // Trade service
+                    VStack(spacing: 8) {
+                        OfferToggle(
+                            title: "Trade a service",
+                            subtitle: "Exchange help",
+                            icon: "arrow.left.arrow.right",
+                            isOn: $canTradeService,
+                            color: Color.hopePurple
+                        )
+                        
+                        if canTradeService {
+                            TextField("", text: $tradeServiceDetails)
+                                .placeholder(when: tradeServiceDetails.isEmpty) {
+                                    Text("What service can you offer?")
+                                        .foregroundColor(.gray)
+                                }
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.hopeDarkSecondary)
+                                )
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    
+                    // Review
+                    OfferToggle(
+                        title: "Write a great review",
+                        subtitle: "Build their reputation",
+                        icon: "star",
+                        isOn: $canWriteReview,
+                        color: Color.yellow
+                    )
+                }
+            }
+            
+            // Summary card
+            VStack(alignment: .leading, spacing: 16) {
+                Label("Ready to post!", systemImage: "checkmark.circle.fill")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.hopeGreen)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundColor(Color.hopeOrange)
+                        Text(title.isEmpty ? "Your help request" : title)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack {
+                        Image(systemName: selectedHelpType.icon)
+                            .foregroundColor(selectedHelpType.color)
+                        Text(selectedHelpType.rawValue)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "clock")
+                            .foregroundColor(urgency.color)
+                        Text(urgency.rawValue)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.hopeDarkSecondary)
+                )
+            }
+        }
+    }
+    
+    var bottomNavigation: some View {
+        HStack(spacing: 16) {
+            if currentStep < 4 {
+                Button(action: { currentStep += 1 }) {
+                    HStack {
+                        Text("Continue")
+                            .font(.headline)
+                        Image(systemName: "arrow.right")
+                            .font(.headline)
+                    }
+                    .foregroundColor(Color.hopeDarkBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(canProceed() ? Color.hopeOrange : Color.gray)
+                    )
+                }
+                .disabled(!canProceed())
+            } else {
+                Button(action: postHelpRequest) {
+                    HStack {
+                        Image(systemName: "hand.raised.fill")
+                            .font(.headline)
+                        Text("Post Help Request")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(Color.hopeDarkBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeOrange)
+                    )
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 20)
+        .background(
+            Color.hopeDarkBg
+                .shadow(color: .black.opacity(0.3), radius: 10, y: -5)
+        )
+    }
+    
+    private func canProceed() -> Bool {
+        switch currentStep {
+        case 1:
+            return !title.isEmpty && !description.isEmpty
+        case 2:
+            return true // All have defaults
+        case 3:
+            return !duration.isEmpty && !location.isEmpty
+        case 4:
+            return true // At least offer gratitude
+        default:
+            return true
+        }
+    }
+    
+    private func postHelpRequest() {
+        // In a real app, this would post to the server
+        showingSuccessAlert = true
+    }
+}
+
+// MARK: - Supporting Views
+
+struct HelpTypeButton: View {
+    let type: NeedHelpFlow.HelpType
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? type.color : type.color.opacity(0.2))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: type.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : type.color)
+                }
+                
+                Text(type.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? type.color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+struct UrgencyButton: View {
+    let urgency: NeedHelpFlow.Urgency
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Circle()
+                    .fill(urgency.color)
+                    .frame(width: 12, height: 12)
+                
+                Text(urgency.rawValue)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(urgency.color)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? urgency.color.opacity(0.2) : Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? urgency.color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+struct OfferToggle: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    @Binding var isOn: Bool
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                    .frame(width: 30)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .toggleStyle(SwitchToggleStyle(tint: color))
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.hopeDarkSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isOn ? color.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+        )
+        .animation(.easeInOut(duration: 0.2), value: isOn)
+    }
+}
+
+#Preview {
+    NeedHelpFlow(selectedTab: .constant(0))
+        .environmentObject(DataManager.shared)
+}
