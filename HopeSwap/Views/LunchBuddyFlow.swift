@@ -1083,7 +1083,7 @@ struct LunchBuddyFlow: View {
             title: headline.isEmpty ? "Looking for Lunch Buddy" : headline,
             description: description,
             category: .miscellaneous,
-            condition: .new,
+            condition: .likeNew,
             userId: UUID(),
             location: location.isEmpty ? "Current Location" : location,
             price: 0,
