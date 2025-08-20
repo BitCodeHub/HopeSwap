@@ -272,6 +272,24 @@ struct LunchBuddyFlow: View {
         case smallGroup = "Small Group (3-4)"
         case largeGroup = "Large Group (5+)"
         case flexible = "Flexible"
+        
+        var icon: String {
+            switch self {
+            case .oneOnOne: return "person.2"
+            case .smallGroup: return "person.3"
+            case .largeGroup: return "person.3.fill"
+            case .flexible: return "person.2.wave.2"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .oneOnOne: return Color.hopeBlue
+            case .smallGroup: return Color.hopeGreen
+            case .largeGroup: return Color.hopeOrange
+            case .flexible: return Color.hopePurple
+            }
+        }
     }
     
     enum NetworkingLevel: String, CaseIterable {
@@ -286,6 +304,24 @@ struct LunchBuddyFlow: View {
         case emergencyOnly = "Emergency Only"
         case occasional = "Occasional OK"
         case flexible = "Flexible"
+        
+        var icon: String {
+            switch self {
+            case .noPhones: return "iphone.slash"
+            case .emergencyOnly: return "exclamationmark.triangle"
+            case .occasional: return "iphone"
+            case .flexible: return "checkmark.circle"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .noPhones: return Color.red
+            case .emergencyOnly: return Color.hopeOrange
+            case .occasional: return Color.hopeBlue
+            case .flexible: return Color.hopeGreen
+            }
+        }
     }
     
     var body: some View {
@@ -822,13 +858,15 @@ struct LunchBuddyFlow: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
-                    Picker("Group Size", selection: $groupSize) {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(GroupSize.allCases, id: \.self) { size in
-                            Text(size.rawValue).tag(size)
+                            GroupSizeCard(
+                                size: size,
+                                isSelected: groupSize == size,
+                                action: { groupSize = size }
+                            )
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .colorScheme(.dark)
                 }
                 
                 // Networking level
@@ -854,9 +892,9 @@ struct LunchBuddyFlow: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         ForEach(PhonePolicy.allCases, id: \.self) { policy in
-                            PhonePolicyButton(
+                            PhonePolicyCard(
                                 policy: policy,
                                 isSelected: phoneUsage == policy,
                                 action: { phoneUsage = policy }
@@ -1425,6 +1463,88 @@ struct PhonePolicyButton: View {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(isSelected ? Color.yellow : Color.hopeDarkSecondary)
                 )
+        }
+    }
+}
+
+struct GroupSizeCard: View {
+    let size: LunchBuddyFlow.GroupSize
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? size.color : size.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: size.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : size.color)
+                }
+                
+                Text(size.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? size.color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+struct PhonePolicyCard: View {
+    let policy: LunchBuddyFlow.PhonePolicy
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? policy.color : policy.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: policy.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : policy.color)
+                }
+                
+                Text(policy.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? policy.color : Color.clear, lineWidth: 2)
+                    )
+            )
         }
     }
 }
