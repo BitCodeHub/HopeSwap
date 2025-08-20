@@ -107,6 +107,34 @@ struct LunchBuddyFlow: View {
         case lactoseIntolerant = "Lactose Intolerant"
         case lowCarb = "Low Carb/Keto"
         case none = "No Restrictions"
+        
+        var icon: String {
+            switch self {
+            case .vegetarian: return "leaf"
+            case .vegan: return "leaf.circle"
+            case .glutenFree: return "wheat"
+            case .kosher: return "star.circle"
+            case .halal: return "moon.stars"
+            case .nutAllergy: return "exclamationmark.triangle"
+            case .lactoseIntolerant: return "drop.triangle"
+            case .lowCarb: return "minus.circle"
+            case .none: return "checkmark.circle"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .vegetarian: return Color.hopeGreen
+            case .vegan: return Color.mint
+            case .glutenFree: return Color.hopeOrange
+            case .kosher: return Color.hopeBlue
+            case .halal: return Color.hopePurple
+            case .nutAllergy: return Color.red
+            case .lactoseIntolerant: return Color.yellow
+            case .lowCarb: return Color.cyan
+            case .none: return Color.gray
+            }
+        }
     }
     
     enum PriceRange: String, CaseIterable {
@@ -465,7 +493,11 @@ struct LunchBuddyFlow: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                Text("Select all that apply")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(DietaryRestriction.allCases, id: \.self) { restriction in
                         DietaryButton(
                             restriction: restriction,
@@ -1067,17 +1099,36 @@ struct DietaryButton: View {
     
     var body: some View {
         Button(action: action) {
-            Text(restriction.rawValue)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? Color.hopeGreen : Color.hopeDarkSecondary)
-                )
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? restriction.color : restriction.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: restriction.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : restriction.color)
+                }
+                
+                Text(restriction.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? restriction.color : Color.clear, lineWidth: 2)
+                    )
+            )
         }
     }
 }
