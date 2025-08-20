@@ -160,6 +160,28 @@ struct LunchBuddyFlow: View {
         case picnic = "Outdoor/Picnic"
         case workCafeteria = "Work Cafeteria"
         case delivery = "Order In"
+        
+        var icon: String {
+            switch self {
+            case .sitDown: return "fork.knife.circle"
+            case .quickBite: return "hare"
+            case .coffee: return "cup.and.saucer"
+            case .picnic: return "sun.max"
+            case .workCafeteria: return "building.2.crop.circle"
+            case .delivery: return "takeoutbag.and.cup.and.straw"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .sitDown: return Color.hopePurple
+            case .quickBite: return Color.hopeOrange
+            case .coffee: return Color.brown
+            case .picnic: return Color.hopeGreen
+            case .workCafeteria: return Color.hopeBlue
+            case .delivery: return Color.red
+            }
+        }
     }
     
     enum Weekday: String, CaseIterable {
@@ -549,7 +571,7 @@ struct LunchBuddyFlow: View {
                     .font(.caption)
                     .foregroundColor(.gray)
                 
-                VStack(spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(MealType.allCases, id: \.self) { type in
                         MealTypeButton(
                             type: type,
@@ -1178,22 +1200,35 @@ struct MealTypeButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack {
-                Text(type.rawValue)
-                    .font(.subheadline)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
-                
-                Spacer()
-                
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color.hopeDarkBg)
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? type.color : type.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: type.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : type.color)
                 }
+                
+                Text(type.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding()
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.hopeOrange : Color.hopeDarkSecondary)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? type.color : Color.clear, lineWidth: 2)
+                    )
             )
         }
     }
