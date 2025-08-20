@@ -486,13 +486,15 @@ struct WalkingBuddyFlow: View {
                         .font(.subheadline)
                         .foregroundColor(.gray)
                     
-                    Picker("Experience", selection: $experienceLevel) {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                         ForEach(Experience.allCases, id: \.self) { level in
-                            Text(level.rawValue).tag(level)
+                            WalkingExperienceButton(
+                                experience: level,
+                                isSelected: experienceLevel == level,
+                                action: { experienceLevel = level }
+                            )
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .colorScheme(.dark)
                 }
             }
         }
@@ -1081,6 +1083,30 @@ struct WalkingDurationButton: View {
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(isSelected ? Color.hopePurple : Color.hopeDarkSecondary)
+                )
+        }
+    }
+}
+
+struct WalkingExperienceButton: View {
+    let experience: WalkingBuddyFlow.Experience
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(experience.rawValue)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.hopeGreen : Color.hopeDarkSecondary)
                 )
         }
     }
