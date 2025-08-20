@@ -585,7 +585,7 @@ struct WalkingBuddyFlow: View {
                     .font(.caption)
                     .foregroundColor(.gray)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(Terrain.allCases, id: \.self) { terrain in
                         TerrainButton(
                             terrain: terrain,
@@ -1011,10 +1011,10 @@ struct TerrainButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            VStack(spacing: 6) {
                 Image(systemName: terrain.icon)
-                    .font(.caption)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                    .font(.title3)
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : Color.hopeGreen)
                 
                 Text(terrain.rawValue)
                     .font(.caption)
@@ -1022,13 +1022,18 @@ struct TerrainButton: View {
                     .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
             .padding(.horizontal, 8)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(isSelected ? Color.hopeGreen : Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.hopeGreen : Color.clear, lineWidth: 2)
+                    )
             )
         }
     }
