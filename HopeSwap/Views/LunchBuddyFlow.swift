@@ -230,6 +230,23 @@ struct LunchBuddyFlow: View {
             case .anything: return "bubble.left.and.bubble.right"
             }
         }
+        
+        var color: Color {
+            switch self {
+            case .work: return Color.hopeBlue
+            case .hobbies: return Color.hopePink
+            case .family: return Color.hopeOrange
+            case .travel: return Color.mint
+            case .sports: return Color.red
+            case .tech: return Color.cyan
+            case .currentEvents: return Color.yellow
+            case .entertainment: return Color.hopePurple
+            case .food: return Color.hopeGreen
+            case .books: return Color.indigo
+            case .wellness: return Color.pink
+            case .anything: return Color.gray
+            }
+        }
     }
     
     enum SocialStyle: String, CaseIterable {
@@ -757,9 +774,9 @@ struct LunchBuddyFlow: View {
                     .font(.caption)
                     .foregroundColor(.gray)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(ConversationTopic.allCases, id: \.self) { topic in
-                        TopicButton(
+                        ConversationTopicCard(
                             topic: topic,
                             isSelected: conversationTopics.contains(topic),
                             action: {
@@ -1279,6 +1296,47 @@ struct TopicButton: View {
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.hopePurple : Color.hopeDarkSecondary)
+            )
+        }
+    }
+}
+
+struct ConversationTopicCard: View {
+    let topic: LunchBuddyFlow.ConversationTopic
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? topic.color : topic.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: topic.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : topic.color)
+                }
+                
+                Text(topic.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? topic.color : Color.clear, lineWidth: 2)
+                    )
             )
         }
     }
