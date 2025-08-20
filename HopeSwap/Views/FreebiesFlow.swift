@@ -10,6 +10,7 @@ struct FreebiesFlow: View {
     @State private var showingImagePicker = false
     @State private var showingCamera = false
     @State private var showingSuccessAlert = false
+    @State private var showingCategorySelection = false
     
     // Item data
     @State private var title = ""
@@ -103,6 +104,9 @@ struct FreebiesFlow: View {
             }
         } message: {
             Text("Your free item has been posted! You'll be notified when someone is interested.")
+        }
+        .sheet(isPresented: $showingCategorySelection) {
+            CategorySelectionView(selectedCategory: $selectedCategory)
         }
     }
     
@@ -205,30 +209,76 @@ struct FreebiesFlow: View {
     var stepTwoContent: some View {
         VStack(alignment: .leading, spacing: 24) {
             // Category section
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Choose a category", systemImage: "square.grid.2x2")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Category")
+                    .font(.headline)
                     .foregroundColor(.white)
                 
-                CategoryGrid(selectedCategory: $selectedCategory)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        // Default categories to show
+                        let defaultCategories: [Category] = [
+                            .electronics,
+                            .furniture,
+                            .homeKitchen,
+                            .sportingGoods,
+                            .toysGames
+                        ]
+                        
+                        // Include selected category if it's not in the default list
+                        let displayCategories = defaultCategories.contains(selectedCategory) ? defaultCategories : defaultCategories + [selectedCategory]
+                        
+                        ForEach(displayCategories, id: \.self) { cat in
+                            FreebiesCategoryChip(
+                                title: cat.rawValue,
+                                isSelected: selectedCategory == cat,
+                                action: { selectedCategory = cat }
+                            )
+                        }
+                        
+                        // More button with chevron
+                        Button(action: { showingCategorySelection = true }) {
+                            HStack(spacing: 4) {
+                                Text("More")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.3))
+                            )
+                        }
+                    }
+                }
             }
             
             // Condition section
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Item condition", systemImage: "star.fill")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Condition")
+                    .font(.headline)
                     .foregroundColor(.white)
                 
-                ConditionPicker(selectedCondition: $selectedCondition, showPrice: false)
+                VStack(spacing: 12) {
+                    ForEach(Condition.allCases, id: \.self) { cond in
+                        FreebiesConditionRow(
+                            condition: cond,
+                            isSelected: selectedCondition == cond,
+                            action: { selectedCondition = cond }
+                        )
+                    }
+                }
             }
             
             // Why giving away
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Why are you giving this away?", systemImage: "heart")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Why are you giving this away?")
+                    .font(.headline)
                     .foregroundColor(.white)
                 
                 VStack(spacing: 12) {
@@ -702,6 +752,80 @@ struct SelectionCard: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isSelected ? color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+// MARK: - Components
+
+struct FreebiesCategoryChip: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var categoryColor: Color {
+        // Match colors with the categories we're displaying
+        switch title {
+        case "Electronics": return Color.hopeBlue
+        case "Furniture": return Color.brown
+        case "Home & Kitchen": return Color.hopeGreen
+        case "Sporting Goods": return Color.red
+        case "Toys & Games": return Color.hopeOrange
+        case "Books, Movies & Music": return Color.hopePurple
+        case "Menswear", "Womenswear", "Kidswear & Baby": return Color.hopePink
+        case "Vehicles", "Auto Parts": return Color.orange
+        case "Health & Beauty": return Color.pink
+        case "Pet Supplies": return Color.yellow
+        case "Arts & Crafts": return Color.purple
+        case "Jewelry & Watches": return Color.cyan
+        case "Musical Instruments": return Color.indigo
+        case "Patio & Garden": return Color.hopeGreen
+        case "Home Improvement": return Color.hopeGreen
+        default: return Color.gray
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(isSelected ? categoryColor : Color.gray.opacity(0.3))
+                )
+        }
+    }
+}
+
+struct FreebiesConditionRow: View {
+    let condition: Condition
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(condition.rawValue)
+                    .foregroundColor(.white)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color.hopeGreen)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.hopeGreen.opacity(0.1) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.hopeGreen : Color.gray.opacity(0.3), lineWidth: 1)
                     )
             )
         }
