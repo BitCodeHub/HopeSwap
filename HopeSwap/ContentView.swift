@@ -126,6 +126,21 @@ struct ContentView: View {
             case .needHelp:
                 NeedHelpFlow(selectedTab: $selectedTab)
                     .environmentObject(DataManager.shared)
+            case .carpool:
+                CarpoolFlow(selectedTab: $selectedTab)
+                    .environmentObject(DataManager.shared)
+            case .workoutBuddy:
+                WorkoutBuddyFlow(selectedTab: $selectedTab)
+                    .environmentObject(DataManager.shared)
+            case .walkingBuddy:
+                WalkingBuddyFlow(selectedTab: $selectedTab)
+                    .environmentObject(DataManager.shared)
+            case .lunchBuddy:
+                LunchBuddyFlow(selectedTab: $selectedTab)
+                    .environmentObject(DataManager.shared)
+            case .events:
+                EventsFlow(selectedTab: $selectedTab)
+                    .environmentObject(DataManager.shared)
             default:
                 EmptyView()
             }

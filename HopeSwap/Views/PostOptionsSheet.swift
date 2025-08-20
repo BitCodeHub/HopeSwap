@@ -117,7 +117,9 @@ struct PostOptionsSheet: View {
                                 color: Color.purple,
                                 action: {
                                     showingPostOptions = false
-                                    // TODO: Implement carpool flow
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedPostType = .carpool
+                                    }
                                 }
                             )
                             
@@ -128,7 +130,9 @@ struct PostOptionsSheet: View {
                                 color: Color.red,
                                 action: {
                                     showingPostOptions = false
-                                    // TODO: Implement workout buddy flow
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedPostType = .workoutBuddy
+                                    }
                                 }
                             )
                             
@@ -139,7 +143,9 @@ struct PostOptionsSheet: View {
                                 color: Color.mint,
                                 action: {
                                     showingPostOptions = false
-                                    // TODO: Implement walking buddy flow
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedPostType = .walkingBuddy
+                                    }
                                 }
                             )
                             
@@ -150,7 +156,9 @@ struct PostOptionsSheet: View {
                                 color: Color.orange,
                                 action: {
                                     showingPostOptions = false
-                                    // TODO: Implement lunch buddy flow
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedPostType = .lunchBuddy
+                                    }
                                 }
                             )
                         }
@@ -174,7 +182,9 @@ struct PostOptionsSheet: View {
                                 color: Color.hopePurple,
                                 action: {
                                     showingPostOptions = false
-                                    // TODO: Implement events flow
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        selectedPostType = .events
+                                    }
                                 }
                             )
                             

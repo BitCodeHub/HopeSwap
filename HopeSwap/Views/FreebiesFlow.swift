@@ -345,7 +345,7 @@ struct FreebiesFlow: View {
                 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60))], spacing: 8) {
                     ForEach(Weekday.allCases, id: \.self) { day in
-                        DayButton(
+                        FreebiesDayButton(
                             day: day.rawValue,
                             isSelected: availableDays.contains(day),
                             action: {
@@ -367,7 +367,7 @@ struct FreebiesFlow: View {
                 
                 VStack(spacing: 8) {
                     ForEach(TimeSlot.allCases, id: \.self) { slot in
-                        TimeSlotButton(
+                        FreebiesTimeSlotButton(
                             slot: slot.rawValue,
                             isSelected: availableTimeSlots.contains(slot),
                             action: {
@@ -611,7 +611,7 @@ struct ReasonButton: View {
     }
 }
 
-struct DayButton: View {
+struct FreebiesDayButton: View {
     let day: String
     let isSelected: Bool
     let action: () -> Void
@@ -631,7 +631,7 @@ struct DayButton: View {
     }
 }
 
-struct TimeSlotButton: View {
+struct FreebiesTimeSlotButton: View {
     let slot: String
     let isSelected: Bool
     let action: () -> Void

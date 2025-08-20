@@ -1,0 +1,1138 @@
+import SwiftUI
+import MapKit
+
+struct CarpoolFlow: View {
+    @EnvironmentObject var dataManager: DataManager
+    @Binding var selectedTab: Int
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var currentStep = 1
+    @State private var showingSuccessAlert = false
+    
+    // Trip details
+    @State private var tripType: TripType = .regular
+    @State private var origin = ""
+    @State private var destination = ""
+    @State private var tripDate = Date()
+    @State private var departureTime = Date()
+    @State private var isFlexibleTime = false
+    @State private var flexibleMinutes = 15.0
+    
+    // Preferences
+    @State private var frequency: Frequency = .oneTime
+    @State private var selectedDays: Set<Weekday> = []
+    @State private var smokingAllowed = false
+    @State private var petsAllowed = false
+    @State private var musicPreference: MusicPreference = .driverChoice
+    @State private var conversationLevel: ConversationLevel = .moderate
+    @State private var detourWilling = false
+    @State private var maxDetourMinutes = 10.0
+    
+    // Vehicle/Passenger details
+    @State private var isDriver = true
+    @State private var vehicleMake = ""
+    @State private var vehicleModel = ""
+    @State private var vehicleColor = ""
+    @State private var availableSeats = 1
+    @State private var luggageSpace: LuggageSpace = .small
+    @State private var hasChildSeat = false
+    @State private var wheelchairAccessible = false
+    
+    // Cost sharing
+    @State private var costSharingType: CostSharing = .splitGas
+    @State private var estimatedCost = ""
+    @State private var paymentMethod: PaymentMethod = .cash
+    @State private var notes = ""
+    
+    enum TripType: String, CaseIterable {
+        case regular = "Regular Commute"
+        case oneWay = "One Way Trip"
+        case roundTrip = "Round Trip"
+        case airport = "Airport"
+        case shopping = "Shopping/Errands"
+        case event = "Event/Concert"
+        
+        var icon: String {
+            switch self {
+            case .regular: return "arrow.triangle.2.circlepath"
+            case .oneWay: return "arrow.right"
+            case .roundTrip: return "arrow.left.arrow.right"
+            case .airport: return "airplane"
+            case .shopping: return "cart"
+            case .event: return "ticket"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .regular: return Color.hopeBlue
+            case .oneWay: return Color.hopeGreen
+            case .roundTrip: return Color.hopeOrange
+            case .airport: return Color.hopePurple
+            case .shopping: return Color.hopePink
+            case .event: return Color.yellow
+            }
+        }
+    }
+    
+    enum Frequency: String, CaseIterable {
+        case oneTime = "One Time"
+        case daily = "Daily"
+        case weekly = "Weekly"
+        case custom = "Custom Days"
+    }
+    
+    enum MusicPreference: String, CaseIterable {
+        case driverChoice = "Driver's Choice"
+        case noMusic = "No Music"
+        case passenger = "Open to Suggestions"
+        case anything = "Anything Goes"
+    }
+    
+    enum ConversationLevel: String, CaseIterable {
+        case quiet = "Quiet Ride"
+        case moderate = "Some Chat"
+        case talkative = "Love to Talk"
+        case flexible = "Go with the Flow"
+    }
+    
+    enum LuggageSpace: String, CaseIterable {
+        case none = "No Space"
+        case small = "Small Bag"
+        case medium = "Suitcase"
+        case large = "Multiple Bags"
+    }
+    
+    enum CostSharing: String, CaseIterable {
+        case free = "Free Ride"
+        case splitGas = "Split Gas"
+        case fixedAmount = "Fixed Amount"
+        case donation = "Donation Based"
+    }
+    
+    enum PaymentMethod: String, CaseIterable {
+        case cash = "Cash"
+        case venmo = "Venmo"
+        case paypal = "PayPal"
+        case zelle = "Zelle"
+        case other = "Other"
+    }
+    
+    enum Weekday: String, CaseIterable {
+        case monday = "Mon"
+        case tuesday = "Tue"
+        case wednesday = "Wed"
+        case thursday = "Thu"
+        case friday = "Fri"
+        case saturday = "Sat"
+        case sunday = "Sun"
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.hopeDarkBg
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header
+                    headerView
+                    
+                    // Progress bar
+                    ProgressBar(currentStep: currentStep, totalSteps: 4)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
+                    
+                    // Content
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            switch currentStep {
+                            case 1:
+                                stepOneContent
+                            case 2:
+                                stepTwoContent
+                            case 3:
+                                stepThreeContent
+                            case 4:
+                                stepFourContent
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 100)
+                    }
+                    
+                    // Bottom navigation
+                    bottomNavigation
+                }
+            }
+            .navigationBarHidden(true)
+        }
+        .alert("Carpool Posted!", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                dismiss()
+                selectedTab = 0
+            }
+        } message: {
+            Text("Your carpool has been posted! You'll be notified when someone is interested in sharing a ride.")
+        }
+    }
+    
+    var headerView: some View {
+        HStack {
+            Button(action: { 
+                if currentStep > 1 {
+                    currentStep -= 1
+                } else {
+                    dismiss()
+                }
+            }) {
+                Image(systemName: currentStep > 1 ? "chevron.left" : "xmark")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 4) {
+                Text("Carpool")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text("Step \(currentStep) of 4")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            // Placeholder for alignment
+            Color.clear
+                .frame(width: 44, height: 44)
+        }
+        .padding()
+    }
+    
+    var stepOneContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Trip type
+            VStack(alignment: .leading, spacing: 12) {
+                Label("What kind of trip?", systemImage: "car.fill")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    ForEach(TripType.allCases, id: \.self) { type in
+                        TripTypeCard(
+                            type: type,
+                            isSelected: tripType == type,
+                            action: { tripType = type }
+                        )
+                    }
+                }
+            }
+            
+            // Origin and destination
+            VStack(alignment: .leading, spacing: 16) {
+                Label("Trip details", systemImage: "map")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                // Origin
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "location.circle.fill")
+                            .foregroundColor(Color.hopeGreen)
+                        Text("Starting from")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    TextField("", text: $origin)
+                        .placeholder(when: origin.isEmpty) {
+                            Text("Enter pickup location")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                }
+                
+                // Destination
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "mappin.circle.fill")
+                            .foregroundColor(Color.hopeOrange)
+                        Text("Going to")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    TextField("", text: $destination)
+                        .placeholder(when: destination.isEmpty) {
+                            Text("Enter destination")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                }
+            }
+            
+            // Date and time
+            VStack(alignment: .leading, spacing: 16) {
+                Label("When?", systemImage: "calendar")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                if tripType == .regular {
+                    // Frequency selection
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("How often?")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        Picker("Frequency", selection: $frequency) {
+                            ForEach(Frequency.allCases, id: \.self) { freq in
+                                Text(freq.rawValue).tag(freq)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .colorScheme(.dark)
+                    }
+                    
+                    if frequency == .custom {
+                        Text("Select days")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .padding(.top)
+                        
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 60))], spacing: 8) {
+                            ForEach(Weekday.allCases, id: \.self) { day in
+                                CarpoolDayButton(
+                                    day: day.rawValue,
+                                    isSelected: selectedDays.contains(day),
+                                    action: {
+                                        if selectedDays.contains(day) {
+                                            selectedDays.remove(day)
+                                        } else {
+                                            selectedDays.insert(day)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // One-time trip date
+                    DatePicker(
+                        "Trip date",
+                        selection: $tripDate,
+                        in: Date()...,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.compact)
+                    .accentColor(Color.hopeOrange)
+                    .colorScheme(.dark)
+                }
+                
+                // Time selection
+                VStack(alignment: .leading, spacing: 12) {
+                    DatePicker(
+                        "Departure time",
+                        selection: $departureTime,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .datePickerStyle(.compact)
+                    .accentColor(Color.hopeOrange)
+                    .colorScheme(.dark)
+                    
+                    // Flexible time toggle
+                    Toggle(isOn: $isFlexibleTime) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Flexible timing")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Text("Can adjust by a few minutes")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
+                    
+                    if isFlexibleTime {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Flexible by: \(Int(flexibleMinutes)) minutes")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            
+                            Slider(value: $flexibleMinutes, in: 5...30, step: 5)
+                                .accentColor(Color.hopeGreen)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    var stepTwoContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Ride preferences
+            VStack(alignment: .leading, spacing: 16) {
+                Label("Ride preferences", systemImage: "person.2.fill")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                // Smoking
+                CarpoolPreferenceToggle(
+                    title: "Smoking allowed",
+                    subtitle: "Passengers can smoke",
+                    icon: "smoke",
+                    isOn: $smokingAllowed,
+                    color: Color.gray
+                )
+                
+                // Pets
+                CarpoolPreferenceToggle(
+                    title: "Pets allowed",
+                    subtitle: "Furry friends welcome",
+                    icon: "pawprint",
+                    isOn: $petsAllowed,
+                    color: Color.brown
+                )
+                
+                // Music preference
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "music.note")
+                            .foregroundColor(Color.hopePurple)
+                        Text("Music preference")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    VStack(spacing: 8) {
+                        ForEach(MusicPreference.allCases, id: \.self) { pref in
+                            CarpoolRadioButton(
+                                title: pref.rawValue,
+                                isSelected: musicPreference == pref,
+                                action: { musicPreference = pref }
+                            )
+                        }
+                    }
+                }
+                
+                // Conversation level
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .foregroundColor(Color.hopeBlue)
+                        Text("Conversation preference")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    VStack(spacing: 8) {
+                        ForEach(ConversationLevel.allCases, id: \.self) { level in
+                            CarpoolRadioButton(
+                                title: level.rawValue,
+                                isSelected: conversationLevel == level,
+                                action: { conversationLevel = level }
+                            )
+                        }
+                    }
+                }
+                
+                // Detour willingness
+                VStack(spacing: 12) {
+                    CarpoolPreferenceToggle(
+                        title: "Willing to make detours",
+                        subtitle: "For pickup/dropoff",
+                        icon: "arrow.triangle.turn.up.right.diamond",
+                        isOn: $detourWilling,
+                        color: Color.hopeOrange
+                    )
+                    
+                    if detourWilling {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Max detour: \(Int(maxDetourMinutes)) minutes")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            
+                            Slider(value: $maxDetourMinutes, in: 5...30, step: 5)
+                                .accentColor(Color.hopeOrange)
+                        }
+                        .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+            }
+        }
+    }
+    
+    var stepThreeContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Driver or passenger
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Are you driving or riding?", systemImage: "car.2")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                HStack(spacing: 12) {
+                    RoleCard(
+                        title: "I'm Driving",
+                        subtitle: "Offering seats",
+                        icon: "steeringwheel",
+                        isSelected: isDriver,
+                        color: Color.hopeGreen,
+                        action: { isDriver = true }
+                    )
+                    
+                    RoleCard(
+                        title: "Need a Ride",
+                        subtitle: "Looking for driver",
+                        icon: "figure.wave",
+                        isSelected: !isDriver,
+                        color: Color.hopeBlue,
+                        action: { isDriver = false }
+                    )
+                }
+            }
+            
+            if isDriver {
+                // Vehicle details
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("Vehicle details", systemImage: "car.fill")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                    
+                    HStack(spacing: 12) {
+                        TextField("", text: $vehicleMake)
+                            .placeholder(when: vehicleMake.isEmpty) {
+                                Text("Make")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                        
+                        TextField("", text: $vehicleModel)
+                            .placeholder(when: vehicleModel.isEmpty) {
+                                Text("Model")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                    }
+                    
+                    TextField("", text: $vehicleColor)
+                        .placeholder(when: vehicleColor.isEmpty) {
+                            Text("Color (helps riders find you)")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                    
+                    // Available seats
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Available seats")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            Text("Not including driver")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()
+                        
+                        Stepper("\(availableSeats)", value: $availableSeats, in: 1...7)
+                            .labelsHidden()
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                    
+                    // Luggage space
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Luggage space")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(LuggageSpace.allCases, id: \.self) { space in
+                                LuggageButton(
+                                    space: space,
+                                    isSelected: luggageSpace == space,
+                                    action: { luggageSpace = space }
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Accessibility options
+                    VStack(spacing: 12) {
+                        CarpoolPreferenceToggle(
+                            title: "Child seat available",
+                            subtitle: "For young passengers",
+                            icon: "figure.and.child.holdinghands",
+                            isOn: $hasChildSeat,
+                            color: Color.yellow
+                        )
+                        
+                        CarpoolPreferenceToggle(
+                            title: "Wheelchair accessible",
+                            subtitle: "Vehicle equipped for wheelchairs",
+                            icon: "figure.roll",
+                            isOn: $wheelchairAccessible,
+                            color: Color.hopeBlue
+                        )
+                    }
+                }
+            } else {
+                // Passenger preferences
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("What do you need?", systemImage: "person.fill")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                    
+                    // Number of seats needed
+                    HStack {
+                        Text("Seats needed: \(availableSeats)")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        Stepper("", value: $availableSeats, in: 1...4)
+                            .labelsHidden()
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                    
+                    // Special requirements
+                    Text("Any special requirements?")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.top)
+                    
+                    TextField("", text: $notes)
+                        .placeholder(when: notes.isEmpty) {
+                            Text("e.g., Need trunk space for luggage, traveling with a pet...")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                }
+            }
+        }
+    }
+    
+    var stepFourContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Cost sharing
+            VStack(alignment: .leading, spacing: 16) {
+                Label("Cost sharing", systemImage: "dollarsign.circle")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                VStack(spacing: 8) {
+                    ForEach(CostSharing.allCases, id: \.self) { type in
+                        CostSharingCard(
+                            type: type,
+                            isSelected: costSharingType == type,
+                            action: { costSharingType = type }
+                        )
+                    }
+                }
+                
+                if costSharingType == .splitGas || costSharingType == .fixedAmount {
+                    TextField("", text: $estimatedCost)
+                        .placeholder(when: estimatedCost.isEmpty) {
+                            Text(costSharingType == .splitGas ? "Estimated gas cost to split" : "Amount per person")
+                                .foregroundColor(.gray)
+                        }
+                        .foregroundColor(.white)
+                        .keyboardType(.decimalPad)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+                
+                // Payment method
+                if costSharingType != .free {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Preferred payment method")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                            ForEach(PaymentMethod.allCases, id: \.self) { method in
+                                PaymentButton(
+                                    method: method,
+                                    isSelected: paymentMethod == method,
+                                    action: { paymentMethod = method }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Additional notes
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Anything else to add?", systemImage: "text.bubble")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                
+                TextEditor(text: $notes)
+                    .placeholder(when: notes.isEmpty) {
+                        Text("Special instructions, meeting point details, etc...")
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 8)
+                    }
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .frame(minHeight: 100)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                    .scrollContentBackground(.hidden)
+            }
+            
+            // Summary
+            VStack(alignment: .leading, spacing: 16) {
+                Label("Ready to post!", systemImage: "checkmark.circle.fill")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.hopeGreen)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: tripType.icon)
+                            .foregroundColor(tripType.color)
+                        Text("\(origin.isEmpty ? "Starting point" : origin) → \(destination.isEmpty ? "Destination" : destination)")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack {
+                        Image(systemName: isDriver ? "car.fill" : "figure.wave")
+                            .foregroundColor(Color.hopeOrange)
+                        Text(isDriver ? "Offering \(availableSeats) seat\(availableSeats == 1 ? "" : "s")" : "Need \(availableSeats) seat\(availableSeats == 1 ? "" : "s")")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "dollarsign.circle")
+                            .foregroundColor(Color.hopeGreen)
+                        Text(costSharingType.rawValue)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.hopeDarkSecondary)
+                )
+            }
+        }
+    }
+    
+    var bottomNavigation: some View {
+        HStack(spacing: 16) {
+            if currentStep < 4 {
+                Button(action: { currentStep += 1 }) {
+                    HStack {
+                        Text("Continue")
+                            .font(.headline)
+                        Image(systemName: "arrow.right")
+                            .font(.headline)
+                    }
+                    .foregroundColor(Color.hopeDarkBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(canProceed() ? Color.hopeOrange : Color.gray)
+                    )
+                }
+                .disabled(!canProceed())
+            } else {
+                Button(action: postCarpool) {
+                    HStack {
+                        Image(systemName: "car.fill")
+                            .font(.headline)
+                        Text("Post Carpool")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(Color.hopeDarkBg)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeOrange)
+                    )
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 20)
+        .background(
+            Color.hopeDarkBg
+                .shadow(color: .black.opacity(0.3), radius: 10, y: -5)
+        )
+    }
+    
+    private func canProceed() -> Bool {
+        switch currentStep {
+        case 1:
+            return !origin.isEmpty && !destination.isEmpty && 
+                   (tripType != .regular || frequency != .custom || !selectedDays.isEmpty)
+        case 2:
+            return true // All have defaults
+        case 3:
+            if isDriver {
+                return !vehicleMake.isEmpty && !vehicleModel.isEmpty && !vehicleColor.isEmpty
+            } else {
+                return true
+            }
+        case 4:
+            return costSharingType == .free || !estimatedCost.isEmpty
+        default:
+            return true
+        }
+    }
+    
+    private func postCarpool() {
+        // In a real app, this would post to the server
+        showingSuccessAlert = true
+    }
+}
+
+// MARK: - Supporting Views
+
+struct TripTypeCard: View {
+    let type: CarpoolFlow.TripType
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? type.color : type.color.opacity(0.2))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: type.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : type.color)
+                }
+                
+                Text(type.rawValue)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? type.color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+struct CarpoolDayButton: View {
+    let day: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(day)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .frame(width: 60, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.hopeOrange : Color.hopeDarkSecondary)
+                )
+        }
+    }
+}
+
+struct CarpoolPreferenceToggle: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    @Binding var isOn: Bool
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(color)
+                    .frame(width: 30)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .toggleStyle(SwitchToggleStyle(tint: color))
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.hopeDarkSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isOn ? color.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+        )
+        .animation(.easeInOut(duration: 0.2), value: isOn)
+    }
+}
+
+struct CarpoolRadioButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Circle()
+                    .stroke(isSelected ? Color.hopeOrange : Color.gray, lineWidth: 2)
+                    .frame(width: 20, height: 20)
+                    .overlay(
+                        Circle()
+                            .fill(Color.hopeOrange)
+                            .frame(width: 12, height: 12)
+                            .opacity(isSelected ? 1 : 0)
+                    )
+                
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                
+                Spacer()
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.hopeDarkSecondary)
+            )
+        }
+    }
+}
+
+struct RoleCard: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(isSelected ? 1 : 0.2))
+                        .frame(width: 60, height: 60)
+                    
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : color)
+                }
+                
+                VStack(spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(isSelected ? color : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+    }
+}
+
+struct LuggageButton: View {
+    let space: CarpoolFlow.LuggageSpace
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(space.rawValue)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.hopePurple : Color.hopeDarkSecondary)
+                )
+        }
+    }
+}
+
+struct CostSharingCard: View {
+    let type: CarpoolFlow.CostSharing
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var icon: String {
+        switch type {
+        case .free: return "gift"
+        case .splitGas: return "fuelpump"
+        case .fixedAmount: return "dollarsign.circle"
+        case .donation: return "heart"
+        }
+    }
+    
+    var color: Color {
+        switch type {
+        case .free: return Color.hopeGreen
+        case .splitGas: return Color.hopeOrange
+        case .fixedAmount: return Color.hopeBlue
+        case .donation: return Color.hopePink
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.headline)
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : color)
+                
+                Text(type.rawValue)
+                    .font(.headline)
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                
+                Spacer()
+                
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : .gray)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? color : Color.hopeDarkSecondary)
+            )
+        }
+    }
+}
+
+struct PaymentButton: View {
+    let method: CarpoolFlow.PaymentMethod
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(method.rawValue)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.hopeGreen : Color.hopeDarkSecondary)
+                )
+        }
+    }
+}
+
+#Preview {
+    CarpoolFlow(selectedTab: .constant(0))
+        .environmentObject(DataManager.shared)
+}
