@@ -415,13 +415,15 @@ struct LunchBuddyFlow: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
-                Picker("Buddy Preference", selection: $buddyPreference) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     ForEach(BuddyPreference.allCases, id: \.self) { pref in
-                        Text(pref.rawValue).tag(pref)
+                        LunchBuddyPreferenceButton(
+                            preference: pref,
+                            isSelected: buddyPreference == pref,
+                            action: { buddyPreference = pref }
+                        )
                     }
                 }
-                .pickerStyle(SegmentedPickerStyle())
-                .colorScheme(.dark)
             }
         }
     }
@@ -992,6 +994,30 @@ struct LunchBuddyFlow: View {
 }
 
 // MARK: - Supporting Views
+
+struct LunchBuddyPreferenceButton: View {
+    let preference: LunchBuddyFlow.BuddyPreference
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(preference.rawValue)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.hopeOrange : Color.hopeDarkSecondary)
+                )
+        }
+    }
+}
 
 struct CuisineCard: View {
     let cuisine: LunchBuddyFlow.CuisineType
