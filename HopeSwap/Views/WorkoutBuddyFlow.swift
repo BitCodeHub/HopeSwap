@@ -142,6 +142,19 @@ struct WorkoutBuddyFlow: View {
             case .mentalHealth: return "brain"
             }
         }
+        
+        var color: Color {
+            switch self {
+            case .loseWeight: return Color.hopeGreen
+            case .buildMuscle: return Color.red
+            case .getToned: return Color.hopePurple
+            case .improveEndurance: return Color.hopeOrange
+            case .stayActive: return Color.hopeBlue
+            case .trainForEvent: return Color.yellow
+            case .rehabilitation: return Color.mint
+            case .mentalHealth: return Color.pink
+            }
+        }
     }
     
     enum Weekday: String, CaseIterable {
@@ -458,7 +471,7 @@ struct WorkoutBuddyFlow: View {
                     .font(.caption)
                     .foregroundColor(.gray)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(Goal.allCases, id: \.self) { goal in
                         GoalCard(
                             goal: goal,
@@ -1023,24 +1036,35 @@ struct GoalCard: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: goal.icon)
-                    .font(.caption)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? goal.color : goal.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: goal.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : goal.color)
+                }
                 
                 Text(goal.rawValue)
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
-                    .lineLimit(2)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.hopeOrange : Color.hopeDarkSecondary)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? goal.color : Color.clear, lineWidth: 2)
+                    )
             )
         }
     }
