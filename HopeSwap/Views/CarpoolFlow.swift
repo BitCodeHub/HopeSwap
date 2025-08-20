@@ -44,6 +44,23 @@ struct CarpoolFlow: View {
     @State private var paymentMethod: PaymentMethod = .cash
     @State private var notes = ""
     
+    // Additional missing properties
+    @State private var startLocation = ""
+    @State private var headline = ""
+    @State private var preferredDays: [Weekday] = []
+    @State private var rideType: RideType = .driver
+    @State private var seatsAvailable = 1
+    @State private var conversationPreference: ConversationLevel = .moderate
+    @State private var lookingForDriver = false
+    @State private var lookingForRiders = false
+    @State private var commuteType: CommuteType = .occasional
+    @State private var vehicleType: VehicleType = .sedan
+    @State private var costPerRide: Double = 0.0
+    @State private var costSharingMethod: CostMethod = .perRide
+    @State private var carpoolRules = ""
+    @State private var additionalNotes = ""
+    @State private var maxDetour: Double = 5.0
+    
     enum TripType: String, CaseIterable {
         case regular = "Regular Commute"
         case oneWay = "One Way Trip"
@@ -126,6 +143,30 @@ struct CarpoolFlow: View {
         case friday = "Fri"
         case saturday = "Sat"
         case sunday = "Sun"
+    }
+    
+    enum RideType: String, CaseIterable {
+        case driver = "Driver"
+        case passenger = "Passenger"
+    }
+    
+    enum CommuteType: String, CaseIterable {
+        case daily = "Daily"
+        case occasional = "Occasional"
+    }
+    
+    enum VehicleType: String, CaseIterable {
+        case sedan = "Sedan"
+        case suv = "SUV"
+        case truck = "Truck"
+        case van = "Van"
+        case other = "Other"
+    }
+    
+    enum CostMethod: String, CaseIterable {
+        case perRide = "Per Ride"
+        case perWeek = "Per Week"
+        case perMonth = "Per Month"
     }
     
     var body: some View {
@@ -851,7 +892,46 @@ struct CarpoolFlow: View {
     }
     
     private func postCarpool() {
-        // In a real app, this would post to the server
+        // Create formatted description
+        var description = "🚗 Carpool Request\n\n"
+        description += "**Route:** \(startLocation.isEmpty ? "Not specified" : startLocation) to \(destination.isEmpty ? "Not specified" : destination)\n"
+        description += "**Schedule:** \(preferredDays.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Time:** \(isFlexibleTime ? "Flexible" : DateFormatter.localizedString(from: departureTime, dateStyle: .none, timeStyle: .short))\n"
+        description += "**Type:** \(commuteType == .daily ? "Daily commute" : "Occasional")\n\n"
+        
+        if rideType == .driver {
+            description += "**Offering:** \(vehicleType.rawValue) with \(seatsAvailable) seat(s) available\n"
+            description += "**Cost sharing:** $\(String(format: "%.0f", costPerRide))\(costSharingMethod == .perRide ? " per ride" : " " + costSharingMethod.rawValue)\n"
+        } else {
+            description += "**Looking for:** \(lookingForDriver ? "Driver" : lookingForRiders ? "Riders to share costs" : "Carpool partner")\n"
+        }
+        
+        if !carpoolRules.isEmpty {
+            description += "\n**Preferences:** \(carpoolRules)\n"
+        }
+        
+        description += "\n**Distance willing to detour:** \(Int(maxDetour)) miles\n"
+        description += "**Music preference:** \(musicPreference.rawValue)\n"
+        description += "**Conversation:** \(conversationPreference.rawValue)\n"
+        
+        if !additionalNotes.isEmpty {
+            description += "\n**Additional notes:** \(additionalNotes)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: headline.isEmpty ? "Carpool Partner Wanted" : headline,
+            description: description,
+            category: .miscellaneous,
+            condition: .new,
+            userId: UUID(),
+            location: startLocation.isEmpty ? "Current Location" : startLocation,
+            price: 0,
+            priceIsFirm: true,
+            images: []
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
     }
 }

@@ -921,8 +921,73 @@ struct LunchBuddyFlow: View {
     }
     
     private func postLunchBuddy() {
-        // In a real app, this would post to the server
+        // Create formatted description
+        var description = "🍴 Lunch Buddy Request\n\n"
+        description += "**About me:** \(aboutMe.isEmpty ? "Not specified" : aboutMe)\n\n"
+        
+        if !occupation.isEmpty {
+            description += "**Occupation:** \(occupation)\n"
+        }
+        if !company.isEmpty {
+            description += "**Company:** \(company)\n"
+        }
+        if !age.isEmpty {
+            description += "**Age:** \(age)\n"
+        }
+        description += "**Looking for:** \(buddyPreference.rawValue)\n\n"
+        
+        description += "**Cuisine preferences:** \(cuisineTypes.map { $0.rawValue }.joined(separator: ", "))\n"
+        if !dietaryRestrictions.isEmpty {
+            description += "**Dietary restrictions:** \(dietaryRestrictions.map { $0.rawValue }.joined(separator: ", "))\n"
+        }
+        description += "**Price range:** \(priceRange.rawValue)\n"
+        description += "**Meal types:** \(mealType.map { $0.rawValue }.joined(separator: ", "))\n"
+        if !favoriteSpots.isEmpty {
+            description += "**Favorite spots:** \(favoriteSpots)\n"
+        }
+        description += "**Open to new places:** \(openToNew ? "Yes" : "No")\n\n"
+        
+        description += "**Schedule:** \(preferredDays.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Lunch time:** \(formatTime(lunchTime))\(flexibleTime ? " (flexible)" : "")\n"
+        description += "**Duration:** \(lunchDuration.rawValue)\n\n"
+        
+        description += "**Location:** \(location.isEmpty ? "Not specified" : location)\n"
+        description += "**Willing to travel:** \(Int(maxDistance)) miles\n"
+        description += "**Can drive:** \(canDrive ? "Yes" : "No")\n\n"
+        
+        if !conversationTopics.isEmpty {
+            description += "**Conversation topics:** \(conversationTopics.map { $0.rawValue }.joined(separator: ", "))\n"
+        }
+        description += "**Social style:** \(socialStyle.rawValue)\n"
+        description += "**Group size:** \(groupSize.rawValue)\n"
+        description += "**Networking interest:** \(networkingInterest.rawValue)\n"
+        description += "**Phone usage:** \(phoneUsage.rawValue)\n"
+        
+        if !additionalNotes.isEmpty {
+            description += "\n**Additional notes:** \(additionalNotes)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: headline.isEmpty ? "Looking for Lunch Buddy" : headline,
+            description: description,
+            category: .miscellaneous,
+            condition: .new,
+            userId: UUID(),
+            location: location.isEmpty ? "Current Location" : location,
+            price: 0,
+            priceIsFirm: true,
+            images: []
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
+    }
+    
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 

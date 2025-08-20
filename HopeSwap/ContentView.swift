@@ -141,8 +141,6 @@ struct ContentView: View {
             case .events:
                 EventsFlow(selectedTab: $selectedTab)
                     .environmentObject(DataManager.shared)
-            default:
-                EmptyView()
             }
         }
     }

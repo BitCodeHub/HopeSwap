@@ -843,6 +843,92 @@ struct EventsFlow: View {
     }
     
     private func postEvent() {
+        // Create formatted description
+        var description = "📅 Event\n\n"
+        description += "**Event:** \(eventDescription.isEmpty ? "Not specified" : eventDescription)\n\n"
+        
+        description += "**Type:** \(eventType.rawValue)\n"
+        description += "**Categories:** \(eventCategory.map { $0.rawValue }.joined(separator: ", "))\n\n"
+        
+        // Date and time formatting
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMMM d, yyyy"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+        
+        description += "**Date:** \(dateFormatter.string(from: eventDate))\n"
+        description += "**Time:** \(timeFormatter.string(from: startTime)) - \(timeFormatter.string(from: endTime))\n"
+        
+        if isRecurring {
+            description += "**Recurring:** \(recurringFrequency.description) until \(dateFormatter.string(from: recurringEndDate))\n"
+        }
+        
+        description += "\n**Location:** "
+        if isVirtual {
+            description += "Virtual Event\n"
+            if !virtualLink.isEmpty {
+                description += "**Meeting link:** \(virtualLink)\n"
+            }
+        } else {
+            if !venue.isEmpty {
+                description += "\(venue)\n"
+            }
+            if !address.isEmpty {
+                description += "**Address:** \(address)\n"
+            }
+            if !parkingInfo.isEmpty {
+                description += "**Parking:** \(parkingInfo)\n"
+            }
+            if !accessibilityInfo.isEmpty {
+                description += "**Accessibility:** \(accessibilityInfo)\n"
+            }
+        }
+        
+        description += "\n**Details:**\n"
+        if !maxAttendees.isEmpty {
+            description += "- Max attendees: \(maxAttendees)\n"
+        } else {
+            description += "- Max attendees: Unlimited\n"
+        }
+        
+        if isTicketed {
+            description += "- Ticketed event: \(ticketPrice.isEmpty ? "Price TBD" : ticketPrice)\n"
+            if !registrationLink.isEmpty {
+                description += "- Registration: \(registrationLink)\n"
+            }
+        } else {
+            description += "- Free event\n"
+        }
+        
+        description += "- Age restriction: \(ageRestriction.rawValue)\n"
+        
+        if !whatToBring.isEmpty {
+            description += "\n**What to bring:** \(whatToBring)\n"
+        }
+        
+        description += "\n**Host:** \(hostName.isEmpty ? "Not specified" : hostName)\n"
+        if !hostContact.isEmpty {
+            description += "**Contact:** \(hostContact)\n"
+        }
+        
+        if !additionalInfo.isEmpty {
+            description += "\n**Additional info:** \(additionalInfo)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: eventTitle.isEmpty ? "Community Event" : eventTitle,
+            description: description,
+            category: .miscellaneous,
+            condition: .new,
+            userId: UUID(),
+            location: isVirtual ? "Virtual Event" : (venue.isEmpty ? address : venue),
+            price: 0,
+            priceIsFirm: true,
+            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" }
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
     }
 }

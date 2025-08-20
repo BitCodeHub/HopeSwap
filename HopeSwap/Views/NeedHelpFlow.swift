@@ -34,6 +34,14 @@ struct NeedHelpFlow: View {
     @State private var tradeServiceDetails = ""
     @State private var canWriteReview = false
     
+    // Additional properties
+    @State private var specificItemNeeded = ""
+    @State private var timeAvailability = ""
+    @State private var canPickUp = false
+    @State private var canMeetPublic = false
+    @State private var story = ""
+    @State private var additionalInfo = ""
+    
     enum HelpType: String, CaseIterable {
         case moving = "Moving"
         case repair = "Repair"
@@ -622,7 +630,58 @@ struct NeedHelpFlow: View {
     }
     
     private func postHelpRequest() {
-        // In a real app, this would post to the server
+        // Create formatted description
+        var description = "🙏 Need Help Request\n\n"
+        description += "**What I need help with:** \(self.description.isEmpty ? "Not specified" : self.description)\n\n"
+        
+        description += "**Help type:** \(selectedHelpType.rawValue)\n"
+        if !specificItemNeeded.isEmpty {
+            description += "**Specific item needed:** \(specificItemNeeded)\n"
+        }
+        
+        description += "**Urgency:** \(urgency.rawValue)\n"
+        if urgency == .urgent || urgency == .soon {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            description += "**Needed by:** \(formatter.string(from: needByDate))\n"
+        }
+        
+        description += "\n**Location:** \(location.isEmpty ? "Not specified" : location)\n"
+        
+        if selectedHelpType == .other {
+            if !timeAvailability.isEmpty {
+                description += "**Available times:** \(timeAvailability)\n"
+            }
+        }
+        
+        if canPickUp || canMeetPublic {
+            description += "\n**Meeting options:**\n"
+            if canPickUp { description += "- Can pick up\n" }
+            if canMeetPublic { description += "- Can meet in public\n" }
+        }
+        
+        if !story.isEmpty {
+            description += "\n**My story:** \(story)\n"
+        }
+        
+        if !additionalInfo.isEmpty {
+            description += "\n**Additional info:** \(additionalInfo)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: title.isEmpty ? "Need Help" : title,
+            description: description,
+            category: .miscellaneous,
+            condition: .new,
+            userId: UUID(),
+            location: location.isEmpty ? "Current Location" : location,
+            price: 0,
+            priceIsFirm: true,
+            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" }
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
     }
 }

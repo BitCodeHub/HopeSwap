@@ -826,7 +826,66 @@ struct WorkoutBuddyFlow: View {
     }
     
     private func postWorkoutBuddy() {
-        // In a real app, this would post to the server
+        // Create formatted description
+        var description = "🏋️ Workout Buddy Request\n\n"
+        description += "**About me:** \(bio.isEmpty ? "Not specified" : bio)\n\n"
+        
+        if !age.isEmpty {
+            description += "**Age:** \(age)\n"
+        }
+        description += "**Gender:** \(gender.rawValue)\n"
+        description += "**Looking for:** \(buddyGenderPreference.rawValue) buddy\n\n"
+        
+        description += "**Workout types:** \(workoutTypes.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Fitness level:** \(fitnessLevel.rawValue) (\(fitnessLevel.description))\n"
+        if !experience.isEmpty {
+            description += "**Experience:** \(experience)\n"
+        }
+        description += "**Goals:** \(goals.map { $0.rawValue }.joined(separator: ", "))\n"
+        if goals.contains(.trainForEvent) && !customGoal.isEmpty {
+            description += " - \(customGoal)\n"
+        }
+        
+        description += "\n**Schedule:** \(preferredDays.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Times:** \(preferredTimes.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Duration:** \(workoutDuration.rawValue)\n\n"
+        
+        if !gymName.isEmpty {
+            description += "**Primary gym:** \(gymName)\n"
+        }
+        description += "**Location:** \(location.isEmpty ? "Not specified" : location)\n"
+        description += "**Willing to travel:** \(Int(maxDistance)) miles\n"
+        if canMeetAtHome || canMeetOutdoors {
+            description += "**Also available for:** "
+            if canMeetAtHome { description += "Home workouts " }
+            if canMeetOutdoors { description += "Outdoor workouts" }
+            description += "\n"
+        }
+        
+        description += "\n**Preferences:**\n"
+        description += "- Music: \(musicPreference.rawValue)\n"
+        description += "- Chat during workout: \(conversationWhileWorking ? "Yes" : "No")\n"
+        description += "- Can spot/assist: \(spotterAvailable ? "Yes" : "No")\n"
+        description += "- Share equipment: \(shareEquipment ? "Yes" : "No")\n"
+        
+        if !additionalNotes.isEmpty {
+            description += "\n**Additional notes:** \(additionalNotes)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: headline.isEmpty ? "Looking for Workout Buddy" : headline,
+            description: description,
+            category: .sportingGoods,
+            condition: .new,
+            userId: UUID(),
+            location: location.isEmpty ? "Current Location" : location,
+            price: 0,
+            priceIsFirm: true,
+            images: []
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
     }
 }

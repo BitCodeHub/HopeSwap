@@ -836,7 +836,62 @@ struct WalkingBuddyFlow: View {
     }
     
     private func postWalkingBuddy() {
-        // In a real app, this would post to the server
+        // Create formatted description
+        var description = "🚶 Walking Buddy Request\n\n"
+        description += "**About me:** \(aboutMe.isEmpty ? "Not specified" : aboutMe)\n\n"
+        
+        if !age.isEmpty {
+            description += "**Age:** \(age)\n"
+        }
+        description += "**Gender:** \(gender.rawValue)\n"
+        description += "**Looking for:** \(buddyGenderPreference.rawValue) buddy\n\n"
+        
+        description += "**Walking purposes:** \(walkingPurpose.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Pace:** \(pace.rawValue) - \(pace.description)\n"
+        if !typicalDistance.isEmpty {
+            description += "**Typical distance:** \(typicalDistance)\n"
+        }
+        description += "**Duration:** \(typicalDuration.rawValue)\n"
+        description += "**Experience:** \(experienceLevel.rawValue)\n\n"
+        
+        description += "**Schedule:** \(preferredDays.map { $0.rawValue }.joined(separator: ", "))\n"
+        description += "**Times:** \(preferredTimes.map { $0.rawValue }.joined(separator: ", "))\n\n"
+        
+        description += "**Location:** \(neighborhood.isEmpty ? "Not specified" : neighborhood)\n"
+        if !favoriteRoutes.isEmpty {
+            description += "**Favorite routes:** \(favoriteRoutes)\n"
+        }
+        description += "**Max distance from home:** \(Int(maxDistance)) miles\n"
+        if !terrainPreference.isEmpty {
+            description += "**Terrain preference:** \(terrainPreference.map { $0.rawValue }.joined(separator: ", "))\n"
+        }
+        description += "**Open to new routes:** \(openToNewRoutes ? "Yes" : "No")\n\n"
+        
+        if !safetyPreferences.isEmpty {
+            description += "**Safety preferences:** \(safetyPreferences.map { $0.rawValue }.joined(separator: ", "))\n"
+        }
+        if bringsCompanion != .none {
+            description += "**Brings:** \(bringsCompanion.rawValue)\n"
+        }
+        
+        if !additionalNotes.isEmpty {
+            description += "\n**Additional notes:** \(additionalNotes)"
+        }
+        
+        // Create the item
+        let newItem = Item(
+            title: headline.isEmpty ? "Looking for Walking Buddy" : headline,
+            description: description,
+            category: .sportingGoods,
+            condition: .new,
+            userId: UUID(),
+            location: neighborhood.isEmpty ? "Current Location" : neighborhood,
+            price: 0,
+            priceIsFirm: true,
+            images: []
+        )
+        
+        dataManager.addItem(newItem)
         showingSuccessAlert = true
     }
 }

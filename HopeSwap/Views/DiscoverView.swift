@@ -16,6 +16,15 @@ struct DiscoverView: View {
     @State private var showSearchBar = false
     
     let tabs = ["Sell", "For you", "Local", "More"]
+    
+    var displayedItems: [Item] {
+        // If no filters are applied, show all items
+        if searchText.isEmpty && selectedCategory == nil && locationManager.isUsingCurrentLocation && searchedLocation.isEmpty {
+            return dataManager.items
+        }
+        // Otherwise show filtered items
+        return filteredItems
+    }
     let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -173,7 +182,7 @@ struct DiscoverView: View {
                     // Grid of items
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(filteredItems.isEmpty ? dataManager.items : filteredItems) { item in
+                            ForEach(displayedItems) { item in
                                 DiscoverItemCard(item: item)
                                     .onTapGesture {
                                         selectedItem = item
@@ -198,7 +207,13 @@ struct DiscoverView: View {
                     locationManager.locationString = savedCity
                     locationManager.isUsingCurrentLocation = false
                     filterItemsByLocation(savedCity)
+                } else {
+                    // Initialize filteredItems with all items if no saved location
+                    filteredItems = dataManager.items
                 }
+            }
+            .onChange(of: dataManager.items) { _, _ in
+                filterItems()
             }
         }
         .sheet(item: $selectedItem) { item in
