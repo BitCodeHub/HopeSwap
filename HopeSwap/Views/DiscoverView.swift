@@ -15,6 +15,9 @@ struct DiscoverView: View {
     @State private var searchText = ""
     @State private var showSearchBar = false
     @State private var isRefreshing = false
+    @State private var showRefreshTutorial = false
+    @State private var tutorialOffset: CGFloat = -50
+    @State private var tutorialOpacity: Double = 0
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -197,6 +200,43 @@ struct DiscoverView: View {
                         await refreshItems()
                     }
                 }
+                
+                // Pull to refresh tutorial overlay
+                if showRefreshTutorial {
+                    VStack {
+                        // Position at top where pull to refresh would happen
+                        VStack(spacing: 16) {
+                            // Animated hand/arrow icon
+                            Image(systemName: "hand.point.down.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(Color.hopeOrange)
+                                .rotationEffect(.degrees(180))
+                                .offset(y: tutorialOffset)
+                            
+                            // Tutorial text
+                            VStack(spacing: 4) {
+                                Text("Pull down to refresh")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                Text("Swipe down to see new items")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            .offset(y: tutorialOffset / 2)
+                        }
+                        .padding(.top, 100)
+                        .opacity(tutorialOpacity)
+                        
+                        Spacer()
+                    }
+                    .background(
+                        Color.black.opacity(0.6)
+                            .ignoresSafeArea()
+                            .opacity(tutorialOpacity)
+                    )
+                    .allowsHitTesting(false) // Allow interaction with content below
+                }
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -214,6 +254,12 @@ struct DiscoverView: View {
                 } else {
                     // Initialize filteredItems with all items if no saved location
                     filteredItems = dataManager.items
+                }
+                
+                // Show tutorial if it hasn't been shown before
+                if !UserDefaults.standard.bool(forKey: "hasShownRefreshTutorial") {
+                    showRefreshTutorial = true
+                    startTutorialAnimation()
                 }
             }
             .onChange(of: dataManager.items) { _, _ in
@@ -359,6 +405,54 @@ struct DiscoverView: View {
             } else {
                 // If filters are applied, shuffle the filtered items
                 filteredItems.shuffle()
+            }
+        }
+    }
+    
+    private func startTutorialAnimation() {
+        // Fade in
+        withAnimation(.easeIn(duration: 0.5)) {
+            tutorialOpacity = 1
+        }
+        
+        // Wait then start pull animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            // Pull down animation
+            withAnimation(.easeInOut(duration: 1.5)) {
+                tutorialOffset = 80
+            }
+            
+            // Spring back up
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    tutorialOffset = -50
+                }
+                
+                // Repeat once more
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 1.5)) {
+                        tutorialOffset = 80
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            tutorialOffset = -50
+                        }
+                        
+                        // Fade out after second animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            withAnimation(.easeOut(duration: 0.8)) {
+                                tutorialOpacity = 0
+                            }
+                            
+                            // Hide tutorial and mark as shown
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                                showRefreshTutorial = false
+                                UserDefaults.standard.set(true, forKey: "hasShownRefreshTutorial")
+                            }
+                        }
+                    }
+                }
             }
         }
     }
