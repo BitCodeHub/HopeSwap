@@ -88,87 +88,87 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Outdoor Patio Set", description: "4-piece patio furniture set with cushions", category: .homeKitchen, condition: .good, userId: UUID(), location: "Fullerton", postedDate: now.addingTimeInterval(-3600 * 18), price: 225.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Outdoor Patio Set", description: "4-piece patio furniture set with cushions", category: .homeKitchen, condition: .good, userId: UUID(), location: "Fullerton", postedDate: now.addingTimeInterval(-3600 * 18), price: 225.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400"]
                 return item
             }(),
             // Additional items for different cities
             {
-                var item = Item(title: "MacBook Pro 14\"", description: "2023 model, M3 chip, excellent condition", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false)
+                var item = Item(title: "MacBook Pro 14\"", description: "2023 model, M3 chip, excellent condition", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Surfboard Collection", description: "3 boards, various sizes, great for beginners", category: .sportingGoods, condition: .good, userId: UUID(), location: "San Diego", postedDate: now.addingTimeInterval(-3600 * 6), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Bike or skateboard", openToOffers: true)
+                var item = Item(title: "Surfboard Collection", description: "3 boards, various sizes, great for beginners", category: .sportingGoods, condition: .good, userId: UUID(), location: "San Diego", postedDate: now.addingTimeInterval(-3600 * 6), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Bike or skateboard", openToOffers: true, listingType: .trade)
                 item.images = ["https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Art Supplies Bundle", description: "Professional grade paints, brushes, canvases", category: .miscellaneous, condition: .new, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 2), price: 150.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Art Supplies Bundle", description: "Professional grade paints, brushes, canvases", category: .miscellaneous, condition: .new, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 2), price: 150.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Beach Cruiser Bike", description: "Vintage style, perfect for boardwalk rides", category: .sportingGoods, condition: .good, userId: UUID(), location: "San Diego", postedDate: now.addingTimeInterval(-3600 * 8), price: 0, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Beach Cruiser Bike", description: "Vintage style, perfect for boardwalk rides", category: .sportingGoods, condition: .good, userId: UUID(), location: "San Diego", postedDate: now.addingTimeInterval(-3600 * 8), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway)
                 item.images = ["https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400"]
                 return item
             }(),
             // New York items
             {
-                var item = Item(title: "Broadway Show Tickets", description: "2 tickets to Hamilton, orchestra seats", category: .miscellaneous, condition: .new, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Concert tickets or sports memorabilia", openToOffers: true)
+                var item = Item(title: "Broadway Show Tickets", description: "2 tickets to Hamilton, orchestra seats", category: .miscellaneous, condition: .new, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Concert tickets or sports memorabilia", openToOffers: true, listingType: .trade)
                 item.images = ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Vintage NYC Subway Map", description: "1970s original MTA subway map, framed", category: .miscellaneous, condition: .good, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 5), price: 85.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Vintage NYC Subway Map", description: "1970s original MTA subway map, framed", category: .miscellaneous, condition: .good, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 5), price: 85.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1609607847926-da4702f01fef?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Central Park Picnic Set", description: "Complete set with blanket, basket, utensils", category: .homeKitchen, condition: .likeNew, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 2), price: 0, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Central Park Picnic Set", description: "Complete set with blanket, basket, utensils", category: .homeKitchen, condition: .likeNew, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 2), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway)
                 item.images = ["https://images.unsplash.com/photo-1595853035070-59a39fe84de9?w=400"]
                 return item
             }(),
             // Chicago items
             {
-                var item = Item(title: "Cubs Memorabilia", description: "Signed baseball and vintage jersey", category: .sportingGoods, condition: .good, userId: UUID(), location: "Chicago", postedDate: now.addingTimeInterval(-3600 * 3), price: 250.00, priceIsFirm: true, isTradeItem: false)
+                var item = Item(title: "Cubs Memorabilia", description: "Signed baseball and vintage jersey", category: .sportingGoods, condition: .good, userId: UUID(), location: "Chicago", postedDate: now.addingTimeInterval(-3600 * 3), price: 250.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1566479179474-c2e47c13cf50?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Deep Dish Pizza Stone", description: "Authentic Chicago-style pizza making kit", category: .homeKitchen, condition: .new, userId: UUID(), location: "Chicago", postedDate: now.addingTimeInterval(-3600 * 7), price: 45.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Deep Dish Pizza Stone", description: "Authentic Chicago-style pizza making kit", category: .homeKitchen, condition: .new, userId: UUID(), location: "Chicago", postedDate: now.addingTimeInterval(-3600 * 7), price: 45.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400"]
                 return item
             }(),
             // Miami items
             {
-                var item = Item(title: "Beach Volleyball Set", description: "Professional net and Wilson balls", category: .sportingGoods, condition: .good, userId: UUID(), location: "Miami", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Paddleboard or snorkel gear", openToOffers: true)
+                var item = Item(title: "Beach Volleyball Set", description: "Professional net and Wilson balls", category: .sportingGoods, condition: .good, userId: UUID(), location: "Miami", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Paddleboard or snorkel gear", openToOffers: true, listingType: .trade)
                 item.images = ["https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Art Deco Lamp", description: "Vintage Miami Beach style lamp", category: .homeKitchen, condition: .good, userId: UUID(), location: "Miami", postedDate: now.addingTimeInterval(-3600 * 6), price: 120.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Art Deco Lamp", description: "Vintage Miami Beach style lamp", category: .homeKitchen, condition: .good, userId: UUID(), location: "Miami", postedDate: now.addingTimeInterval(-3600 * 6), price: 120.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1565636192437-9c5dd59a75a9?w=400"]
                 return item
             }(),
             // New Orleans items
             {
-                var item = Item(title: "Jazz Trumpet", description: "Professional B♭ trumpet, perfect tone", category: .miscellaneous, condition: .good, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 2), price: 350.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Jazz Trumpet", description: "Professional B♭ trumpet, perfect tone", category: .miscellaneous, condition: .good, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 2), price: 350.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Mardi Gras Beads Collection", description: "Authentic throws from 20+ years of parades", category: .miscellaneous, condition: .likeNew, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 3), price: 0, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Mardi Gras Beads Collection", description: "Authentic throws from 20+ years of parades", category: .miscellaneous, condition: .likeNew, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 3), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway)
                 item.images = ["https://images.unsplash.com/photo-1581235707960-4b6b66864b12?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Cajun Cookbook Set", description: "5 classic Louisiana cookbooks", category: .miscellaneous, condition: .good, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 5), price: 25.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Cajun Cookbook Set", description: "5 classic Louisiana cookbooks", category: .miscellaneous, condition: .good, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600 * 5), price: 25.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "French Quarter Art Print", description: "Limited edition signed print", category: .homeKitchen, condition: .new, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Local artwork or photography", openToOffers: true)
+                var item = Item(title: "French Quarter Art Print", description: "Limited edition signed print", category: .homeKitchen, condition: .new, userId: UUID(), location: "New Orleans", postedDate: now.addingTimeInterval(-3600), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Local artwork or photography", openToOffers: true, listingType: .trade)
                 item.images = ["https://images.unsplash.com/photo-1568693059993-a239b9cd4957?w=400"]
                 return item
             }()

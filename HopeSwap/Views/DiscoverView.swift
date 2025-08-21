@@ -20,6 +20,10 @@ struct DiscoverView: View {
     @State private var showRefreshIndicator = false
     @State private var tutorialText = ""
     @State private var tutorialBackgroundOpacity: Double = 0
+    @State private var showCategoryListing = false
+    @State private var selectedCategoryTitle = ""
+    @State private var selectedListingTypes: [ListingType]? = nil
+    @State private var filterByJustListed = false
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -227,15 +231,115 @@ struct DiscoverView: View {
                         }
                         
                         ScrollView {
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(displayedItems) { item in
-                                    DiscoverItemCard(item: item)
-                                        .onTapGesture {
-                                            selectedItem = item
+                            VStack(spacing: 24) {
+                                // Show category sections if no filters applied
+                                if searchText.isEmpty && selectedCategory == nil {
+                                    // Newly listed section
+                                    CategorySection(
+                                        title: "Newly listed",
+                                        items: displayedItems.filter { $0.isJustListed }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Newly listed"
+                                            selectedListingTypes = nil
+                                            filterByJustListed = true
+                                            showCategoryListing = true
                                         }
+                                    )
+                                    
+                                    // Sell section
+                                    CategorySection(
+                                        title: "Sell",
+                                        items: displayedItems.filter { $0.listingType == .sell }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Sell"
+                                            selectedListingTypes = [.sell]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                    
+                                    // Trade section
+                                    CategorySection(
+                                        title: "Trade",
+                                        items: displayedItems.filter { $0.listingType == .trade }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Trade"
+                                            selectedListingTypes = [.trade]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                    
+                                    // Give Away section
+                                    CategorySection(
+                                        title: "Give Away",
+                                        items: displayedItems.filter { $0.listingType == .giveAway }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Give Away"
+                                            selectedListingTypes = [.giveAway]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                    
+                                    // Need Help section
+                                    CategorySection(
+                                        title: "Need Help",
+                                        items: displayedItems.filter { $0.listingType == .needHelp }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Need Help"
+                                            selectedListingTypes = [.needHelp]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                    
+                                    // Events section
+                                    CategorySection(
+                                        title: "Events",
+                                        items: displayedItems.filter { $0.listingType == .event }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Events"
+                                            selectedListingTypes = [.event]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                    
+                                    // Buddy sections combined
+                                    CategorySection(
+                                        title: "Find a Buddy",
+                                        subtitle: "Carpool, Lunch, Walking & Workout",
+                                        items: displayedItems.filter { 
+                                            [.carpool, .lunchBuddy, .walkingBuddy, .workoutBuddy].contains($0.listingType)
+                                        }.prefix(10).map { $0 },
+                                        selectedItem: $selectedItem,
+                                        onSeeAll: { 
+                                            selectedCategoryTitle = "Find a Buddy"
+                                            selectedListingTypes = [.carpool, .lunchBuddy, .walkingBuddy, .workoutBuddy]
+                                            filterByJustListed = false
+                                            showCategoryListing = true
+                                        }
+                                    )
+                                } else {
+                                    // Show regular grid when filters are applied
+                                    LazyVGrid(columns: columns, spacing: 12) {
+                                        ForEach(displayedItems) { item in
+                                            DiscoverItemCard(item: item, isCompact: false)
+                                                .onTapGesture {
+                                                    selectedItem = item
+                                                }
+                                        }
+                                    }
+                                    .padding(.horizontal)
                                 }
                             }
-                            .padding(.horizontal)
                             .padding(.bottom, 100)
                         }
                         .refreshable {
@@ -315,6 +419,20 @@ struct DiscoverView: View {
                 .onDisappear {
                     filterItems()
                 }
+        }
+        .fullScreenCover(isPresented: $showCategoryListing) {
+            if filterByJustListed {
+                CategoryListingView(categoryTitle: selectedCategoryTitle, filterByJustListed: true)
+                    .environmentObject(dataManager)
+            } else if let types = selectedListingTypes {
+                if types.count == 1, let type = types.first {
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingType: type)
+                        .environmentObject(dataManager)
+                } else {
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: types)
+                        .environmentObject(dataManager)
+                }
+            }
         }
     }
     
@@ -532,145 +650,61 @@ struct TabButton: View {
     }
 }
 
-struct DiscoverItemCard: View {
-    let item: Item
-    
-    var priceText: String {
-        if let price = item.price {
-            return price == 0 ? "Free" : "$\(Int(price))"
-        } else {
-            return "Trade"
-        }
-    }
-    
-    var imagePlaceholder: some View {
-        Rectangle()
-            .fill(Color.gray.opacity(0.3))
-            .frame(height: 200)
-            .overlay(
-                Image(systemName: "photo")
-                    .font(.system(size: 40))
-                    .foregroundColor(.gray)
-            )
-    }
+
+struct CategorySection: View {
+    let title: String
+    var subtitle: String? = nil
+    let items: [Item]
+    @Binding var selectedItem: Item?
+    let onSeeAll: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Image with overlay badges
-            ZStack(alignment: .topLeading) {
-                // Background image
-                Group {
-                    if let firstImage = item.images.first {
-                        if firstImage.starts(with: "data:image") {
-                            // Handle base64 images
-                            if let data = Data(base64Encoded: String(firstImage.dropFirst("data:image/jpeg;base64,".count))),
-                               let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(minWidth: 0, maxWidth: .infinity)
-                                    .frame(height: 200)
-                            } else {
-                                imagePlaceholder
-                            }
-                        } else {
-                            // Handle URL images
-                            AsyncImage(url: URL(string: firstImage)) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(minWidth: 0, maxWidth: .infinity)
-                                    .frame(height: 200)
-                            } placeholder: {
-                                imagePlaceholder
-                            }
-                        }
-                    } else {
-                        imagePlaceholder
-                    }
-                }
-                .clipped()
-                
-                // Badges
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if item.isJustListed {
-                            Badge(text: "Just listed", backgroundColor: .white, textColor: .black)
-                        }
-                        if item.isNearby {
-                            Badge(text: "Nearby", backgroundColor: .white, textColor: .black)
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            Button(action: onSeeAll) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        if let subtitle = subtitle {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
                     }
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.title3)
+                        .foregroundColor(.gray)
                     
                     Spacer()
-                    
-                    // Listing type badge in top right
-                    HStack(spacing: 4) {
-                        Image(systemName: item.listingType.icon)
-                            .font(.caption2)
-                            .foregroundColor(.white)
-                        Text(item.listingType.rawValue)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(item.listingType.color)
-                    )
                 }
-                .padding(8)
             }
-            .frame(height: 200)
-            .clipped()
+            .padding(.horizontal)
             
-            // Item details
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(priceText)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    if item.price == 0 || item.price == nil {
-                        Text("•")
-                            .foregroundColor(.gray)
-                    }
-                }
-                
-                Text(item.title)
+            // Items
+            if items.isEmpty {
+                Text("No items in this category yet")
                     .font(.subheadline)
                     .foregroundColor(.gray)
-                    .lineLimit(2)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(items) { item in
+                            DiscoverItemCard(item: item, isCompact: true)
+                                .onTapGesture {
+                                    selectedItem = item
+                                }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.hopeDarkSecondary)
         }
-        .background(Color.hopeDarkSecondary)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct Badge: View {
-    let text: String
-    let backgroundColor: Color
-    let textColor: Color
-    
-    var body: some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .foregroundColor(textColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(backgroundColor)
-            )
     }
 }
