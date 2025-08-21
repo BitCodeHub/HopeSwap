@@ -14,6 +14,7 @@ struct DiscoverView: View {
     @State private var selectedCategory: Category? = nil
     @State private var searchText = ""
     @State private var showSearchBar = false
+    @State private var isRefreshing = false
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -192,6 +193,9 @@ struct DiscoverView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 100)
                     }
+                    .refreshable {
+                        await refreshItems()
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -341,6 +345,22 @@ struct DiscoverView: View {
         // Clear saved search
         UserDefaults.standard.removeObject(forKey: "lastSearchedZipCode")
         UserDefaults.standard.removeObject(forKey: "lastSearchedCity")
+    }
+    
+    private func refreshItems() async {
+        // Add a small delay for better UX
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        // Randomly shuffle the current items while maintaining filters
+        await MainActor.run {
+            if searchText.isEmpty && selectedCategory == nil && locationManager.isUsingCurrentLocation && searchedLocation.isEmpty {
+                // If no filters, shuffle all items
+                dataManager.items.shuffle()
+            } else {
+                // If filters are applied, shuffle the filtered items
+                filteredItems.shuffle()
+            }
+        }
     }
 }
 
