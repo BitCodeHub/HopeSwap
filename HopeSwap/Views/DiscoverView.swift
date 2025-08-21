@@ -19,6 +19,7 @@ struct DiscoverView: View {
     @State private var contentOffset: CGFloat = 0
     @State private var showRefreshIndicator = false
     @State private var tutorialText = ""
+    @State private var tutorialBackgroundOpacity: Double = 0
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -229,6 +230,14 @@ struct DiscoverView: View {
                     }
                 }
                 .offset(y: contentOffset)
+                
+                // Tutorial background overlay
+                if tutorialBackgroundOpacity > 0 {
+                    Color.black
+                        .opacity(tutorialBackgroundOpacity)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -250,7 +259,10 @@ struct DiscoverView: View {
                 
                 // Always show tutorial on app load
                 showRefreshTutorial = true
-                startTutorialAnimation()
+                // Delay to ensure view is fully loaded
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    startTutorialAnimation()
+                }
             }
             .onChange(of: dataManager.items) { _, _ in
                 filterItems()
@@ -400,10 +412,17 @@ struct DiscoverView: View {
     }
     
     private func startTutorialAnimation() {
+        print("Starting pull-to-refresh tutorial animation")
         // Longer delay to ensure content is loaded
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            print("Animating pull down - first time")
             // Set tutorial text
             tutorialText = "Pull down to refresh"
+            
+            // Fade in background
+            withAnimation(.easeIn(duration: 0.3)) {
+                tutorialBackgroundOpacity = 0.3
+            }
             
             // First pull down animation
             withAnimation(.easeOut(duration: 1.5)) {
@@ -436,6 +455,7 @@ struct DiscoverView: View {
                             withAnimation(.easeOut(duration: 0.3)) {
                                 tutorialText = ""
                                 showRefreshIndicator = false
+                                tutorialBackgroundOpacity = 0
                             }
                         }
                         
