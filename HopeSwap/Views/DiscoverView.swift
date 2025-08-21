@@ -592,15 +592,36 @@ struct DiscoverItemCard: View {
                 .clipped()
                 
                 // Badges
-                VStack(alignment: .leading, spacing: 4) {
-                    if item.isJustListed {
-                        Badge(text: "Just listed", backgroundColor: .white, textColor: .black)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if item.isJustListed {
+                            Badge(text: "Just listed", backgroundColor: .white, textColor: .black)
+                        }
+                        if item.isNearby {
+                            Badge(text: "Nearby", backgroundColor: .white, textColor: .black)
+                        }
                     }
-                    if item.isNearby {
-                        Badge(text: "Nearby", backgroundColor: .white, textColor: .black)
+                    
+                    Spacer()
+                    
+                    // Listing type badge in top right
+                    HStack(spacing: 4) {
+                        Image(systemName: item.listingType.icon)
+                            .font(.caption2)
+                            .foregroundColor(.white)
+                        Text(item.listingType.rawValue)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(item.listingType.color)
+                    )
                 }
-                .padding(6)
+                .padding(8)
             }
             .frame(height: 200)
             .clipped()

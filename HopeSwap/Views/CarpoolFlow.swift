@@ -1125,7 +1125,8 @@ struct CarpoolFlow: View {
             location: startLocation.isEmpty ? "Current Location" : startLocation,
             price: 0,
             priceIsFirm: true,
-            images: []
+            images: [],
+            listingType: .carpool
         )
         
         dataManager.addItem(newItem)

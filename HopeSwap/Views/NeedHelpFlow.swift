@@ -875,7 +875,8 @@ struct NeedHelpFlow: View {
             location: location.isEmpty ? "Current Location" : location,
             price: 0,
             priceIsFirm: true,
-            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" }
+            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" },
+            listingType: .needHelp
         )
         
         dataManager.addItem(newItem)

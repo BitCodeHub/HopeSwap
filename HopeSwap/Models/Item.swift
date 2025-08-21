@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct Item: Identifiable, Codable, Equatable {
     let id: UUID
@@ -21,6 +22,9 @@ struct Item: Identifiable, Codable, Equatable {
     var acceptableItems: String?
     var tradeSuggestions: String?
     var openToOffers: Bool
+    
+    // Listing type to track which flow created this item
+    var listingType: ListingType
     
     // New properties for Discover view
     var isJustListed: Bool {
@@ -46,7 +50,8 @@ struct Item: Identifiable, Codable, Equatable {
          acceptableItems: String? = nil,
          tradeSuggestions: String? = nil,
          openToOffers: Bool = false,
-         images: [String] = []) {
+         images: [String] = [],
+         listingType: ListingType = .sell) {
         self.id = id
         self.title = title
         self.description = description
@@ -65,6 +70,7 @@ struct Item: Identifiable, Codable, Equatable {
         self.acceptableItems = acceptableItems
         self.tradeSuggestions = tradeSuggestions
         self.openToOffers = openToOffers
+        self.listingType = listingType
     }
 }
 
@@ -122,4 +128,44 @@ enum ItemStatus: String, Codable, Equatable {
     case pending = "Pending"
     case traded = "Traded"
     case sold = "Sold"
+}
+
+enum ListingType: String, Codable, CaseIterable {
+    case sell = "Sell"
+    case trade = "Trade"
+    case giveAway = "Give Away"
+    case needHelp = "Need Help"
+    case carpool = "Carpool"
+    case event = "Event"
+    case lunchBuddy = "Lunch Buddy"
+    case workoutBuddy = "Workout Buddy"
+    case walkingBuddy = "Walking Buddy"
+    
+    var color: Color {
+        switch self {
+        case .sell: return Color.hopeGreen
+        case .trade: return Color.hopeBlue
+        case .giveAway: return Color.hopePink
+        case .needHelp: return Color.hopeOrange
+        case .carpool: return Color.hopePurple
+        case .event: return Color.yellow
+        case .lunchBuddy: return Color.red
+        case .workoutBuddy: return Color.cyan
+        case .walkingBuddy: return Color.mint
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .sell: return "dollarsign.circle"
+        case .trade: return "arrow.left.arrow.right"
+        case .giveAway: return "gift"
+        case .needHelp: return "hand.raised"
+        case .carpool: return "car"
+        case .event: return "calendar"
+        case .lunchBuddy: return "fork.knife"
+        case .workoutBuddy: return "dumbbell"
+        case .walkingBuddy: return "figure.walk"
+        }
+    }
 }

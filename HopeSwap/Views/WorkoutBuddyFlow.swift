@@ -1092,7 +1092,8 @@ struct WorkoutBuddyFlow: View {
             location: location.isEmpty ? "Current Location" : location,
             price: 0,
             priceIsFirm: true,
-            images: []
+            images: [],
+            listingType: .workoutBuddy
         )
         
         dataManager.addItem(newItem)

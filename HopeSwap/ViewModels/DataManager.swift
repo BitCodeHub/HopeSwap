@@ -18,7 +18,7 @@ class DataManager: ObservableObject {
         let now = Date()
         items = [
             {
-                var item = Item(title: "Free plants and succulents", description: "Moving out, giving away my plant collection. Includes cacti, succulents, and a small plant stand.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Free plants and succulents", description: "Moving out, giving away my plant collection. Includes cacti, succulents, and a small plant stand.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway)
                 item.images = [
                     "https://images.unsplash.com/photo-1459156212016-c812468e2115?w=400",
                     "https://images.unsplash.com/photo-1509423350716-97f9360b4e09?w=400",
@@ -28,7 +28,7 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Restaurant robot server", description: "Commercial-grade autonomous serving robot. Perfect for restaurants or events. Barely used.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Restaurant robot server", description: "Commercial-grade autonomous serving robot. Perfect for restaurants or events. Barely used.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = [
                     "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400",
                     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
@@ -37,12 +37,12 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-86400 * 2), price: 50.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-86400 * 2), price: 50.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1502394202744-021cfbb17454?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-86400), price: 780.00, priceIsFirm: true, isTradeItem: false)
+                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-86400), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
                 item.images = [
                     "https://images.unsplash.com/photo-1467043198406-dc953a3defa0?w=400",
                     "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400",
@@ -53,37 +53,37 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Espresso Coffee Machine", description: "Professional espresso machine with grinder. Makes amazing coffee!", category: .homeKitchen, condition: .good, userId: UUID(), location: "Anaheim", postedDate: now.addingTimeInterval(-3600 * 5), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Kitchen appliances", acceptableItems: "Stand mixer, air fryer, instant pot", openToOffers: true)
+                var item = Item(title: "Espresso Coffee Machine", description: "Professional espresso machine with grinder. Makes amazing coffee!", category: .homeKitchen, condition: .good, userId: UUID(), location: "Anaheim", postedDate: now.addingTimeInterval(-3600 * 5), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Kitchen appliances", acceptableItems: "Stand mixer, air fryer, instant pot", openToOffers: true, listingType: .trade)
                 item.images = ["https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Kids Play Kitchen Set", description: "Wooden play kitchen with accessories. Great for imaginative play!", category: .toysGames, condition: .likeNew, userId: UUID(), location: "Santa Ana", postedDate: now.addingTimeInterval(-3600 * 2), price: 45.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Need Help Moving Furniture", description: "Need 2-3 people to help move heavy furniture to second floor apartment this weekend. Pizza and drinks provided!", category: .miscellaneous, condition: .new, userId: UUID(), location: "Santa Ana", postedDate: now.addingTimeInterval(-3600 * 2), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .needHelp)
                 item.images = ["https://images.unsplash.com/photo-1603664454146-50b9bb1e7afa?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Gaming Chair", description: "Ergonomic gaming chair with RGB lighting. Very comfortable!", category: .electronics, condition: .good, userId: UUID(), location: "Fountain Valley", postedDate: now.addingTimeInterval(-86400 * 3), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Gaming accessories or desk", acceptableItems: "Gaming keyboard, monitor, desk", openToOffers: true)
+                var item = Item(title: "Daily Carpool to Downtown LA", description: "Looking for carpool buddy. Leave 7:30am from Fountain Valley, return 5:30pm. Split gas costs.", category: .miscellaneous, condition: .new, userId: UUID(), location: "Fountain Valley", postedDate: now.addingTimeInterval(-86400 * 3), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .carpool)
                 item.images = ["https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Vintage Vinyl Records", description: "Collection of 50+ classic rock and jazz vinyl records", category: .miscellaneous, condition: .good, userId: UUID(), location: "Costa Mesa", postedDate: now.addingTimeInterval(-3600 * 8), price: 120.00, priceIsFirm: true, isTradeItem: false)
+                var item = Item(title: "Community Beach Cleanup Event", description: "Join us for monthly beach cleanup! All supplies provided. Family friendly event.", category: .miscellaneous, condition: .new, userId: UUID(), location: "Costa Mesa", postedDate: now.addingTimeInterval(-3600 * 8), price: 0, priceIsFirm: true, isTradeItem: false, listingType: .event)
                 item.images = ["https://images.unsplash.com/photo-1602848597941-0d3d3a2c0b34?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Baby Stroller System", description: "Travel system with car seat and base. Like new condition.", category: .miscellaneous, condition: .likeNew, userId: UUID(), location: "Irvine", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Looking for Lunch Buddy", description: "Tech worker seeking lunch companions downtown. Love trying new restaurants!", category: .miscellaneous, condition: .new, userId: UUID(), location: "Irvine", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .lunchBuddy)
                 item.images = ["https://images.unsplash.com/photo-1584736286279-9bbdeb77a19a?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Mountain Bike 26\"", description: "Trek mountain bike, 21 speeds, includes helmet", category: .sportingGoods, condition: .good, userId: UUID(), location: "Huntington Beach", postedDate: now.addingTimeInterval(-86400 * 4), price: 185.00, priceIsFirm: false, isTradeItem: false)
+                var item = Item(title: "Workout Partner Needed", description: "Looking for gym buddy at 24 Hour Fitness. Morning workouts, focusing on strength training.", category: .sportingGoods, condition: .new, userId: UUID(), location: "Huntington Beach", postedDate: now.addingTimeInterval(-86400 * 4), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .workoutBuddy)
                 item.images = ["https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Nintendo Switch Games", description: "Bundle of 5 popular Switch games", category: .electronics, condition: .likeNew, userId: UUID(), location: "Long Beach", postedDate: now.addingTimeInterval(-3600 * 12), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "PS5 games or Xbox games", acceptableItems: "Any current gen games", openToOffers: true)
+                var item = Item(title: "Morning Walking Partner", description: "Senior seeking walking companion for daily morning walks at the park. 6am start, 1 hour walk.", category: .miscellaneous, condition: .new, userId: UUID(), location: "Long Beach", postedDate: now.addingTimeInterval(-3600 * 12), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .walkingBuddy)
                 item.images = ["https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=400"]
                 return item
             }(),

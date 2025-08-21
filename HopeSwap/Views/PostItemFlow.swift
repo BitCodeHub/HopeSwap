@@ -244,7 +244,8 @@ struct PostItemFlow: View {
             acceptableItems: isTradeItem ? acceptableItems : nil,
             tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
             openToOffers: isTradeItem ? openToOffers : false,
-            images: imageStrings
+            images: imageStrings,
+            listingType: isTradeItem ? .trade : .sell
         )
         
         dataManager.addItem(newItem)

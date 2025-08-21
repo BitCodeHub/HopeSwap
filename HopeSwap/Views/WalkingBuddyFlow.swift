@@ -1087,7 +1087,8 @@ struct WalkingBuddyFlow: View {
             location: neighborhood.isEmpty ? "Current Location" : neighborhood,
             price: 0,
             priceIsFirm: true,
-            images: []
+            images: [],
+            listingType: .walkingBuddy
         )
         
         dataManager.addItem(newItem)

@@ -203,7 +203,8 @@ struct PostItemView: View {
             category: selectedCategory,
             condition: selectedCondition,
             userId: dataManager.currentUser.id,
-            location: location
+            location: location,
+            listingType: .sell
         )
         
         dataManager.addItem(newItem)

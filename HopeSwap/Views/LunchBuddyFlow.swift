@@ -1274,7 +1274,8 @@ struct LunchBuddyFlow: View {
             location: location.isEmpty ? "Current Location" : location,
             price: 0,
             priceIsFirm: true,
-            images: []
+            images: [],
+            listingType: .lunchBuddy
         )
         
         dataManager.addItem(newItem)

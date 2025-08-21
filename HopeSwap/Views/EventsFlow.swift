@@ -1111,7 +1111,8 @@ struct EventsFlow: View {
             location: isVirtual ? "Virtual Event" : (venue.isEmpty ? address : venue),
             price: 0,
             priceIsFirm: true,
-            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" }
+            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" },
+            listingType: .event
         )
         
         dataManager.addItem(newItem)
