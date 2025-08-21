@@ -185,31 +185,45 @@ struct DiscoverView: View {
                     .padding(.top)
                     .padding(.bottom, 16)
                     
+                    // Tutorial text that appears when grid is pulled down
+                    VStack(spacing: 8) {
+                        HStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Color.hopeOrange))
+                                .scaleEffect(1.2)
+                            Text(tutorialText.isEmpty ? " " : tutorialText)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .fontWeight(.medium)
+                        }
+                        
+                        if !tutorialText.isEmpty {
+                            Text("Try it yourself!")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: tutorialText.isEmpty ? 0 : nil)
+                    .padding(.vertical, tutorialText.isEmpty ? 0 : 20)
+                    .opacity(tutorialText.isEmpty ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.4), value: tutorialText)
+                    
                     // Grid of items
                     ZStack(alignment: .top) {
-                        // Refresh indicator
-                        if showRefreshIndicator || !tutorialText.isEmpty {
-                            VStack(spacing: 8) {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: Color.hopeOrange))
-                                        .scaleEffect(1.2)
-                                    Text(tutorialText.isEmpty ? "Refreshing..." : tutorialText)
-                                        .font(.subheadline)
-                                        .foregroundColor(tutorialText.isEmpty ? .gray : .white)
-                                        .fontWeight(tutorialText.isEmpty ? .regular : .medium)
-                                }
-                                
-                                if !tutorialText.isEmpty {
-                                    Text("Try it yourself!")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
+                        // Refresh indicator for actual refresh
+                        if showRefreshIndicator && tutorialText.isEmpty {
+                            HStack {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: Color.hopeOrange))
+                                    .scaleEffect(1.2)
+                                Text("Refreshing...")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
                             }
                             .padding(.top, 20)
-                            .opacity(showRefreshIndicator || !tutorialText.isEmpty ? 1 : 0)
+                            .opacity(showRefreshIndicator ? 1 : 0)
                             .animation(.easeInOut(duration: 0.3), value: showRefreshIndicator)
-                            .animation(.easeInOut(duration: 0.3), value: tutorialText)
                         }
                         
                         ScrollView {
@@ -228,8 +242,8 @@ struct DiscoverView: View {
                             await refreshItems()
                         }
                     }
+                    .offset(y: contentOffset)
                 }
-                .offset(y: contentOffset)
                 
                 // Tutorial background overlay
                 if tutorialBackgroundOpacity > 0 {
@@ -426,7 +440,7 @@ struct DiscoverView: View {
             
             // First pull down animation
             withAnimation(.easeOut(duration: 1.5)) {
-                contentOffset = 150
+                contentOffset = 120
                 showRefreshIndicator = true
             }
             
@@ -441,7 +455,7 @@ struct DiscoverView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     // Second pull down
                     withAnimation(.easeOut(duration: 1.5)) {
-                        contentOffset = 150
+                        contentOffset = 120
                     }
                     
                     // Hold and spring back
