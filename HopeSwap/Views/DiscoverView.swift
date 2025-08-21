@@ -439,9 +439,9 @@ struct DiscoverView: View {
             }
             
             // First pull down animation
-            withAnimation(.easeOut(duration: 1.5)) {
-                contentOffset = 120
-                showRefreshIndicator = true
+            withAnimation(.easeOut(duration: 1.2)) {
+                contentOffset = 100
+                // Don't show refresh indicator during tutorial
             }
             
             // Hold for a moment
@@ -454,8 +454,8 @@ struct DiscoverView: View {
                 // Wait and repeat once more
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                     // Second pull down
-                    withAnimation(.easeOut(duration: 1.5)) {
-                        contentOffset = 120
+                    withAnimation(.easeOut(duration: 1.2)) {
+                        contentOffset = 100
                     }
                     
                     // Hold and spring back
@@ -468,7 +468,6 @@ struct DiscoverView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             withAnimation(.easeOut(duration: 0.3)) {
                                 tutorialText = ""
-                                showRefreshIndicator = false
                                 tutorialBackgroundOpacity = 0
                             }
                         }
