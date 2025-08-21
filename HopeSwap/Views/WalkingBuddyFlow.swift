@@ -817,7 +817,7 @@ struct WalkingBuddyFlow: View {
                             
                             // Donation options
                             HStack(spacing: 12) {
-                                DonationOption(
+                                WalkingDonationOption(
                                     amount: "$1",
                                     isSelected: selectedDonationOption == 0,
                                     action: {
@@ -827,7 +827,7 @@ struct WalkingBuddyFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                WalkingDonationOption(
                                     amount: "$5",
                                     isSelected: selectedDonationOption == 1,
                                     action: {
@@ -837,7 +837,7 @@ struct WalkingBuddyFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                WalkingDonationOption(
                                     amount: "$10",
                                     isSelected: selectedDonationOption == 2,
                                     action: {
@@ -847,7 +847,7 @@ struct WalkingBuddyFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                WalkingDonationOption(
                                     amount: "Other",
                                     isSelected: selectedDonationOption == 3,
                                     action: {
@@ -1406,7 +1406,7 @@ struct WalkingPreferenceToggle: View {
     }
 }
 
-struct DonationOption: View {
+struct WalkingDonationOption: View {
     let amount: String
     let isSelected: Bool
     let action: () -> Void

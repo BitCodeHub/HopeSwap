@@ -611,7 +611,7 @@ struct NeedHelpFlow: View {
                             
                             // Donation options
                             HStack(spacing: 12) {
-                                DonationOption(
+                                NeedHelpDonationOption(
                                     amount: "$1",
                                     isSelected: selectedDonationOption == 0,
                                     action: {
@@ -621,7 +621,7 @@ struct NeedHelpFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                NeedHelpDonationOption(
                                     amount: "$5",
                                     isSelected: selectedDonationOption == 1,
                                     action: {
@@ -631,7 +631,7 @@ struct NeedHelpFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                NeedHelpDonationOption(
                                     amount: "$10",
                                     isSelected: selectedDonationOption == 2,
                                     action: {
@@ -641,7 +641,7 @@ struct NeedHelpFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                NeedHelpDonationOption(
                                     amount: "Other",
                                     isSelected: selectedDonationOption == 3,
                                     action: {
@@ -1003,7 +1003,7 @@ struct OfferToggle: View {
     }
 }
 
-struct DonationOption: View {
+struct NeedHelpDonationOption: View {
     let amount: String
     let isSelected: Bool
     let action: () -> Void

@@ -868,7 +868,7 @@ struct CarpoolFlow: View {
                             
                             // Donation options
                             HStack(spacing: 12) {
-                                DonationOption(
+                                CarpoolDonationOption(
                                     amount: "$1",
                                     isSelected: selectedDonationOption == 0,
                                     action: {
@@ -878,7 +878,7 @@ struct CarpoolFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                CarpoolDonationOption(
                                     amount: "$5",
                                     isSelected: selectedDonationOption == 1,
                                     action: {
@@ -888,7 +888,7 @@ struct CarpoolFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                CarpoolDonationOption(
                                     amount: "$10",
                                     isSelected: selectedDonationOption == 2,
                                     action: {
@@ -898,7 +898,7 @@ struct CarpoolFlow: View {
                                     }
                                 )
                                 
-                                DonationOption(
+                                CarpoolDonationOption(
                                     amount: "Other",
                                     isSelected: selectedDonationOption == 3,
                                     action: {
@@ -1409,7 +1409,7 @@ struct PaymentButton: View {
     }
 }
 
-struct DonationOption: View {
+struct CarpoolDonationOption: View {
     let amount: String
     let isSelected: Bool
     let action: () -> Void
