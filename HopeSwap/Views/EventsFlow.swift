@@ -46,6 +46,12 @@ struct EventsFlow: View {
     @State private var hostContact = ""
     @State private var additionalInfo = ""
     
+    // Listing fee and donation
+    @State private var showListingFee = true
+    @State private var donationAmount = 1.0
+    @State private var selectedDonationOption = 0
+    @State private var customDonationAmount = ""
+    
     enum EventType: String, CaseIterable {
         case community = "Community"
         case social = "Social"
@@ -768,6 +774,180 @@ struct EventsFlow: View {
                     .scrollContentBackground(.hidden)
             }
             
+            // Listing fee section
+            VStack(alignment: .leading, spacing: 16) {
+                // Header with icon
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.hopePink.opacity(0.2))
+                            .frame(width: 50, height: 50)
+                        
+                        Image(systemName: "heart.fill")
+                            .font(.title2)
+                            .foregroundColor(Color.hopePink)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Make a Difference")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        
+                        Text("Support pediatric cancer research")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                }
+                
+                // Toggle section
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Listing fee")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            
+                            Text(showListingFee ? "$1 donation to charity" : "List for free")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $showListingFee)
+                            .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
+                            .scaleEffect(0.9)
+                            .onChange(of: showListingFee) { _, newValue in
+                                if newValue {
+                                    donationAmount = 1.0
+                                    selectedDonationOption = 0
+                                    customDonationAmount = ""
+                                } else {
+                                    donationAmount = 0
+                                    selectedDonationOption = -1
+                                    customDonationAmount = ""
+                                }
+                            }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                    
+                    // Additional donation section when listing fee is off
+                    if !showListingFee {
+                        VStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Consider making a donation")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                Text("Your generosity helps children fighting cancer")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            
+                            // Donation options
+                            HStack(spacing: 12) {
+                                EventsDonationOption(
+                                    amount: "$1",
+                                    isSelected: selectedDonationOption == 0,
+                                    action: {
+                                        selectedDonationOption = 0
+                                        donationAmount = 1.0
+                                        customDonationAmount = ""
+                                    }
+                                )
+                                
+                                EventsDonationOption(
+                                    amount: "$5",
+                                    isSelected: selectedDonationOption == 1,
+                                    action: {
+                                        selectedDonationOption = 1
+                                        donationAmount = 5.0
+                                        customDonationAmount = ""
+                                    }
+                                )
+                                
+                                EventsDonationOption(
+                                    amount: "$10",
+                                    isSelected: selectedDonationOption == 2,
+                                    action: {
+                                        selectedDonationOption = 2
+                                        donationAmount = 10.0
+                                        customDonationAmount = ""
+                                    }
+                                )
+                                
+                                EventsDonationOption(
+                                    amount: "Other",
+                                    isSelected: selectedDonationOption == 3,
+                                    action: {
+                                        selectedDonationOption = 3
+                                    }
+                                )
+                            }
+                            
+                            // Custom amount input
+                            if selectedDonationOption == 3 {
+                                HStack {
+                                    Text("$")
+                                        .foregroundColor(.gray)
+                                    
+                                    TextField("", text: $customDonationAmount)
+                                        .placeholder(when: customDonationAmount.isEmpty) {
+                                            Text("Enter amount")
+                                                .foregroundColor(.gray)
+                                        }
+                                        .foregroundColor(.white)
+                                        .keyboardType(.decimalPad)
+                                        .onChange(of: customDonationAmount) { _, newValue in
+                                            if let amount = Double(newValue) {
+                                                donationAmount = amount
+                                            }
+                                        }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.hopeDarkSecondary)
+                                )
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                            
+                            // Learn more link
+                            Link(destination: URL(string: "https://www.hyundaihopeonwheels.org")!) {
+                                HStack {
+                                    Text("Learn about Hyundai Hope on Wheels")
+                                        .font(.caption)
+                                        .foregroundColor(Color.hopePink)
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption2)
+                                        .foregroundColor(Color.hopePink)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.hopePink.opacity(0.1), Color.hopePurple.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                }
+            }
+            .animation(.easeInOut, value: showListingFee)
+            
             // Event summary
             EventSummaryCard(
                 title: eventTitle,
@@ -805,7 +985,7 @@ struct EventsFlow: View {
                     HStack {
                         Image(systemName: "calendar.badge.plus")
                             .font(.headline)
-                        Text("Post Event")
+                        Text(donationAmount > 0 ? String(format: "Post for $%.2f", donationAmount) : "Post for Free")
                             .font(.headline)
                             .fontWeight(.semibold)
                     }
@@ -843,6 +1023,12 @@ struct EventsFlow: View {
     }
     
     private func postEvent() {
+        // Process donation if applicable
+        if donationAmount > 0 {
+            // In a real app, this would process the payment through Stripe or similar
+            print("Processing donation of $\(donationAmount) to Hyundai Hope on Wheels")
+        }
+        
         // Create formatted description
         var description = "📅 Event\n\n"
         description += "**Event:** \(eventDescription.isEmpty ? "Not specified" : eventDescription)\n\n"
@@ -1143,6 +1329,32 @@ struct EventSummaryCard: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.hopeDarkSecondary)
             )
+        }
+    }
+}
+
+struct EventsDonationOption: View {
+    let amount: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Text(amount)
+                    .font(.headline)
+                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isSelected ? Color.hopePink : Color.hopeDarkSecondary)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(isSelected ? Color.hopePink : Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+            }
         }
     }
 }
