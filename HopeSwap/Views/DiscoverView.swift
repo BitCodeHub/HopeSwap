@@ -16,8 +16,9 @@ struct DiscoverView: View {
     @State private var showSearchBar = false
     @State private var isRefreshing = false
     @State private var showRefreshTutorial = false
-    @State private var tutorialOffset: CGFloat = -50
-    @State private var tutorialOpacity: Double = 0
+    @State private var contentOffset: CGFloat = 0
+    @State private var showRefreshIndicator = false
+    @State private var tutorialText = ""
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -184,58 +185,49 @@ struct DiscoverView: View {
                     .padding(.bottom, 16)
                     
                     // Grid of items
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(displayedItems) { item in
-                                DiscoverItemCard(item: item)
-                                    .onTapGesture {
-                                        selectedItem = item
-                                    }
-                            }
-                        }
-                        .padding(.horizontal)
-                        .padding(.bottom, 100)
-                    }
-                    .refreshable {
-                        await refreshItems()
-                    }
-                }
-                
-                // Pull to refresh tutorial overlay
-                if showRefreshTutorial {
-                    VStack {
-                        // Position at top where pull to refresh would happen
-                        VStack(spacing: 16) {
-                            // Animated hand/arrow icon
-                            Image(systemName: "hand.point.down.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(Color.hopeOrange)
-                                .rotationEffect(.degrees(180))
-                                .offset(y: tutorialOffset)
-                            
-                            // Tutorial text
-                            VStack(spacing: 4) {
-                                Text("Pull down to refresh")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
+                    ZStack(alignment: .top) {
+                        // Refresh indicator
+                        if showRefreshIndicator || !tutorialText.isEmpty {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Color.hopeOrange))
+                                        .scaleEffect(1.2)
+                                    Text(tutorialText.isEmpty ? "Refreshing..." : tutorialText)
+                                        .font(.subheadline)
+                                        .foregroundColor(tutorialText.isEmpty ? .gray : .white)
+                                        .fontWeight(tutorialText.isEmpty ? .regular : .medium)
+                                }
                                 
-                                Text("Swipe down to see new items")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                if !tutorialText.isEmpty {
+                                    Text("Try it yourself!")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
                             }
-                            .offset(y: tutorialOffset / 2)
+                            .padding(.top, 20)
+                            .opacity(showRefreshIndicator || !tutorialText.isEmpty ? 1 : 0)
+                            .animation(.easeInOut(duration: 0.3), value: showRefreshIndicator)
+                            .animation(.easeInOut(duration: 0.3), value: tutorialText)
                         }
-                        .padding(.top, 100)
-                        .opacity(tutorialOpacity)
                         
-                        Spacer()
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(displayedItems) { item in
+                                    DiscoverItemCard(item: item)
+                                        .onTapGesture {
+                                            selectedItem = item
+                                        }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.bottom, 100)
+                        }
+                        .offset(y: contentOffset)
+                        .refreshable {
+                            await refreshItems()
+                        }
                     }
-                    .background(
-                        Color.black.opacity(0.6)
-                            .ignoresSafeArea()
-                            .opacity(tutorialOpacity)
-                    )
-                    .allowsHitTesting(false) // Allow interaction with content below
                 }
             }
             .navigationBarHidden(true)
@@ -410,46 +402,49 @@ struct DiscoverView: View {
     }
     
     private func startTutorialAnimation() {
-        // Fade in
-        withAnimation(.easeIn(duration: 0.5)) {
-            tutorialOpacity = 1
-        }
-        
-        // Wait then start pull animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            // Pull down animation
-            withAnimation(.easeInOut(duration: 1.5)) {
-                tutorialOffset = 80
+        // Small delay before starting
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Set tutorial text
+            tutorialText = "Pull down to refresh"
+            
+            // First pull down animation
+            withAnimation(.easeOut(duration: 1.2)) {
+                contentOffset = 120
+                showRefreshIndicator = true
             }
             
-            // Spring back up
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                    tutorialOffset = -50
+            // Hold for a moment
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                // Spring back up
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0)) {
+                    contentOffset = 0
                 }
                 
-                // Repeat once more
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    withAnimation(.easeInOut(duration: 1.5)) {
-                        tutorialOffset = 80
+                // Wait and repeat once more
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    // Second pull down
+                    withAnimation(.easeOut(duration: 1.2)) {
+                        contentOffset = 120
                     }
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            tutorialOffset = -50
+                    // Hold and spring back
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0)) {
+                            contentOffset = 0
                         }
                         
-                        // Fade out after second animation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                            withAnimation(.easeOut(duration: 0.8)) {
-                                tutorialOpacity = 0
+                        // Clear tutorial text after animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                tutorialText = ""
+                                showRefreshIndicator = false
                             }
-                            
-                            // Hide tutorial and mark as shown
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                                showRefreshTutorial = false
-                                UserDefaults.standard.set(true, forKey: "hasShownRefreshTutorial")
-                            }
+                        }
+                        
+                        // Mark tutorial as complete
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            showRefreshTutorial = false
+                            UserDefaults.standard.set(true, forKey: "hasShownRefreshTutorial")
                         }
                     }
                 }
