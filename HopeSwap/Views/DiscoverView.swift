@@ -421,17 +421,31 @@ struct DiscoverView: View {
                 }
         }
         .fullScreenCover(isPresented: $showCategoryListing) {
-            if filterByJustListed {
-                CategoryListingView(categoryTitle: selectedCategoryTitle, filterByJustListed: true)
-                    .environmentObject(dataManager)
-            } else if let types = selectedListingTypes {
-                if types.count == 1, let type = types.first {
-                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingType: type)
+            ZStack {
+                Color.hopeDarkBg.ignoresSafeArea()
+                
+                if filterByJustListed {
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, filterByJustListed: true)
                         .environmentObject(dataManager)
+                } else if let types = selectedListingTypes {
+                    if types.count == 1, let type = types.first {
+                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingType: type)
+                            .environmentObject(dataManager)
+                    } else {
+                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: types)
+                            .environmentObject(dataManager)
+                    }
                 } else {
-                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: types)
+                    // Fallback if no filter is set
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: ListingType.allCases)
                         .environmentObject(dataManager)
                 }
+            }
+            .onDisappear {
+                // Reset state when sheet is dismissed
+                selectedCategoryTitle = ""
+                selectedListingTypes = nil
+                filterByJustListed = false
             }
         }
     }

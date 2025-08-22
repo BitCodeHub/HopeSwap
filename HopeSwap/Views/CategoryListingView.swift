@@ -35,7 +35,9 @@ struct CategoryListingView: View {
         if filterByJustListed {
             return dataManager.items.filter { $0.isJustListed }
         } else if let types = listingTypes {
-            return dataManager.items.filter { types.contains($0.listingType) }
+            return dataManager.items.filter { item in
+                types.contains(item.listingType)
+            }
         } else {
             return dataManager.items
         }
@@ -111,6 +113,7 @@ struct CategoryListingView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
         .sheet(item: $selectedItem) { item in
             ListingDetailView(item: item)
                 .environmentObject(dataManager)
