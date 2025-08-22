@@ -153,7 +153,7 @@ struct FreebiesFlow: View {
                 
                 TextField("", text: $title)
                     .placeholder(when: title.isEmpty) {
-                        Text("e.g., Queen size mattress, Kids toys, etc.")
+                        Text("e.g., Sweet treats, Homemade cookies, etc.")
                             .foregroundColor(.gray)
                     }
                     .foregroundColor(.white)
