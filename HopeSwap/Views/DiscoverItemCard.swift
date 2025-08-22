@@ -78,32 +78,6 @@ struct DiscoverItemCard: View {
                         }
                         .padding(12)
                     }
-                    
-                    // Action icons at bottom right
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            HStack(spacing: 8) {
-                                Button(action: {}) {
-                                    Image(systemName: "cart")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.white)
-                                        .frame(width: 32, height: 32)
-                                        .background(Circle().fill(Color.black.opacity(0.5)))
-                                }
-                                
-                                Button(action: {}) {
-                                    Image(systemName: "square.and.pencil")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.white)
-                                        .frame(width: 32, height: 32)
-                                        .background(Circle().fill(Color.black.opacity(0.5)))
-                                }
-                            }
-                        }
-                        .padding(12)
-                    }
                 }
             }
             .aspectRatio(1, contentMode: .fit)
