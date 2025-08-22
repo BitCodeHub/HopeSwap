@@ -279,6 +279,29 @@ struct CarpoolFlow: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
+                // Info note for regular commute
+                if tripType == .regular {
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(Color.hopeBlue)
+                        
+                        Text("Once someone accepts your carpool, you'll need to contact them to arrange specific meeting points and logistics.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeBlue.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.hopeBlue.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                }
+                
                 // Origin
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
