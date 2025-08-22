@@ -18,6 +18,8 @@ struct NeedHelpFlow: View {
     @State private var urgency: Urgency = .flexible
     @State private var location = ""
     @State private var selectedImages: [UIImage] = []
+    @State private var helpLocation: HelpLocation = .none
+    @State private var workLocation = ""
     
     // Timing preferences
     @State private var needByDate = Date()
@@ -87,6 +89,20 @@ struct NeedHelpFlow: View {
             case .childCare: return Color.yellow
             case .shopping: return Color.red
             case .other: return Color.gray
+            }
+        }
+    }
+    
+    enum HelpLocation: String, CaseIterable {
+        case none = "None"
+        case atHome = "At Home"
+        case atWork = "At Work"
+        
+        var icon: String {
+            switch self {
+            case .none: return ""
+            case .atHome: return "house"
+            case .atWork: return "building.2"
             }
         }
     }
@@ -233,6 +249,74 @@ struct NeedHelpFlow: View {
                             .fill(Color.hopeDarkSecondary)
                     )
                     .scrollContentBackground(.hidden)
+            }
+            
+            // Location selection
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Where do you need help?", systemImage: "location")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                HStack(spacing: 12) {
+                    ForEach([HelpLocation.atHome, HelpLocation.atWork], id: \.self) { loc in
+                        Button(action: { helpLocation = loc }) {
+                            HStack {
+                                Image(systemName: loc.icon)
+                                    .font(.body)
+                                Text(loc.rawValue)
+                                    .font(.body)
+                            }
+                            .foregroundColor(helpLocation == loc ? Color.hopeDarkBg : .white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(helpLocation == loc ? Color.hopeOrange : Color.hopeDarkSecondary)
+                            )
+                        }
+                    }
+                }
+                
+                // Show appropriate content based on selection
+                if helpLocation == .atHome {
+                    HStack(spacing: 12) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(Color.hopeOrange)
+                        
+                        Text("For privacy, you'll discuss specific location details directly with helpers after they accept.")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeOrange.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.hopeOrange.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                } else if helpLocation == .atWork {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Work location")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        TextField("", text: $workLocation)
+                            .placeholder(when: workLocation.isEmpty) {
+                                Text("e.g., Downtown office, Retail store...")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                    }
+                }
             }
             
             // Photos section (optional)
@@ -849,7 +933,14 @@ struct NeedHelpFlow: View {
             description += "**Needed by:** \(formatter.string(from: needByDate))\n"
         }
         
-        description += "\n**Location:** \(location.isEmpty ? "Not specified" : location)\n"
+        // Add location info
+        if helpLocation == .atHome {
+            description += "\n**Location:** At Home (Details to be discussed privately)\n"
+        } else if helpLocation == .atWork {
+            description += "\n**Location:** At Work - \(workLocation.isEmpty ? "Not specified" : workLocation)\n"
+        } else {
+            description += "\n**Location:** \(location.isEmpty ? "Not specified" : location)\n"
+        }
         
         if selectedHelpType == .other {
             if !timeAvailability.isEmpty {
@@ -878,7 +969,7 @@ struct NeedHelpFlow: View {
             category: .miscellaneous,
             condition: .new,
             userId: UUID(),
-            location: location.isEmpty ? "Current Location" : location,
+            location: helpLocation == .atHome ? "At Home - Private" : helpLocation == .atWork ? (workLocation.isEmpty ? "At Work" : workLocation) : (location.isEmpty ? "Current Location" : location),
             price: 0,
             priceIsFirm: true,
             images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" },
