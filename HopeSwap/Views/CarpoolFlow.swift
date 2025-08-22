@@ -286,7 +286,7 @@ struct CarpoolFlow: View {
                             .font(.title3)
                             .foregroundColor(Color.hopeBlue)
                         
-                        Text("Once someone accepts your carpool, you'll need to contact them to arrange specific meeting points and logistics.")
+                        Text("For privacy, you'll arrange specific meeting points directly with your carpool partner after matching.")
                             .font(.caption)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.leading)
@@ -300,52 +300,53 @@ struct CarpoolFlow: View {
                                     .stroke(Color.hopeBlue.opacity(0.3), lineWidth: 1)
                             )
                     )
-                }
-                
-                // Origin
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "location.circle.fill")
-                            .foregroundColor(Color.hopeGreen)
-                        Text("Starting from")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
-                    
-                    TextField("", text: $origin)
-                        .placeholder(when: origin.isEmpty) {
-                            Text("Enter pickup location")
+                } else {
+                    // Only show origin/destination for one-time trips
+                    // Origin
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "location.circle.fill")
+                                .foregroundColor(Color.hopeGreen)
+                            Text("Starting from")
+                                .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.hopeDarkSecondary)
-                        )
-                }
-                
-                // Destination
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "mappin.circle.fill")
-                            .foregroundColor(Color.hopeOrange)
-                        Text("Going to")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                        
+                        TextField("", text: $origin)
+                            .placeholder(when: origin.isEmpty) {
+                                Text("Enter pickup location")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
                     }
                     
-                    TextField("", text: $destination)
-                        .placeholder(when: destination.isEmpty) {
-                            Text("Enter destination")
+                    // Destination
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .foregroundColor(Color.hopeOrange)
+                            Text("Going to")
+                                .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.hopeDarkSecondary)
-                        )
+                        
+                        TextField("", text: $destination)
+                            .placeholder(when: destination.isEmpty) {
+                                Text("Enter destination")
+                                    .foregroundColor(.gray)
+                            }
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                    }
                 }
             }
             
@@ -987,10 +988,16 @@ struct CarpoolFlow: View {
                     HStack {
                         Image(systemName: tripType.icon)
                             .foregroundColor(tripType.color)
-                        Text("\(origin.isEmpty ? "Starting point" : origin) → \(destination.isEmpty ? "Destination" : destination)")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .lineLimit(1)
+                        if tripType == .regular {
+                            Text("Regular \(frequency.rawValue) commute")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        } else {
+                            Text("\(origin.isEmpty ? "Starting point" : origin) → \(destination.isEmpty ? "Destination" : destination)")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                        }
                     }
                     
                     HStack {
@@ -1080,8 +1087,13 @@ struct CarpoolFlow: View {
     private func canProceed() -> Bool {
         switch currentStep {
         case 1:
-            return !origin.isEmpty && !destination.isEmpty && 
-                   (tripType != .regular || frequency != .custom || !selectedDays.isEmpty)
+            if tripType == .regular {
+                // For regular commutes, only need frequency/days selection
+                return frequency != .custom || !selectedDays.isEmpty
+            } else {
+                // For one-time trips, need origin and destination
+                return !origin.isEmpty && !destination.isEmpty
+            }
         case 2:
             return true // All have defaults
         case 3:
@@ -1124,10 +1136,17 @@ struct CarpoolFlow: View {
         
         // Create formatted description
         var description = "🚗 Carpool Request\n\n"
-        description += "**Route:** \(startLocation.isEmpty ? "Not specified" : startLocation) to \(destination.isEmpty ? "Not specified" : destination)\n"
-        description += "**Schedule:** \(preferredDays.map { $0.rawValue }.joined(separator: ", "))\n"
-        description += "**Time:** \(isFlexibleTime ? "Flexible" : DateFormatter.localizedString(from: departureTime, dateStyle: .none, timeStyle: .short))\n"
-        description += "**Type:** \(commuteType == .daily ? "Daily commute" : "Occasional")\n\n"
+        if tripType == .regular {
+            description += "**Type:** Regular \(frequency.rawValue) commute\n"
+        } else {
+            description += "**Route:** \(origin.isEmpty ? "Not specified" : origin) to \(destination.isEmpty ? "Not specified" : destination)\n"
+        }
+        if frequency == .custom && !selectedDays.isEmpty {
+            description += "**Schedule:** \(selectedDays.map { $0.rawValue }.joined(separator: ", "))\n"
+        } else if frequency != .oneTime {
+            description += "**Schedule:** \(frequency.rawValue)\n"
+        }
+        description += "**Time:** \(isFlexibleTime ? "Flexible" : DateFormatter.localizedString(from: departureTime, dateStyle: .none, timeStyle: .short))\n\n"
         
         if rideType == .driver {
             description += "**Offering:** \(vehicleType.rawValue) with \(seatsAvailable) seat(s) available\n"
@@ -1150,12 +1169,12 @@ struct CarpoolFlow: View {
         
         // Create the item
         let newItem = Item(
-            title: headline.isEmpty ? "Carpool Partner Wanted" : headline,
+            title: tripType == .regular ? "Regular Commute Partner" : "Carpool: \(origin) to \(destination)",
             description: description,
             category: .miscellaneous,
             condition: .new,
             userId: UUID(),
-            location: startLocation.isEmpty ? "Current Location" : startLocation,
+            location: tripType == .regular ? "Private - Contact to Arrange" : (origin.isEmpty ? "Current Location" : origin),
             price: 0,
             priceIsFirm: true,
             images: [],
