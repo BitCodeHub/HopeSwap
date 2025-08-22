@@ -375,11 +375,14 @@ struct DiscoverView: View {
                     filteredItems = dataManager.items
                 }
                 
-                // Always show tutorial on app load
-                showRefreshTutorial = true
-                // Delay to ensure view is fully loaded
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    startTutorialAnimation()
+                // Show tutorial only once per app install
+                let hasShownTutorial = UserDefaults.standard.bool(forKey: "hasShownPullToRefreshTutorial")
+                if !hasShownTutorial {
+                    showRefreshTutorial = true
+                    // Delay to ensure view is fully loaded
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        startTutorialAnimation()
+                    }
                 }
             }
             .onChange(of: dataManager.items) { _, _ in
@@ -561,9 +564,8 @@ struct DiscoverView: View {
     
     private func startTutorialAnimation() {
         print("Starting pull-to-refresh tutorial animation")
-        // Longer delay to ensure content is loaded
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            print("Animating pull down - first time")
+        // Delay to ensure content is loaded
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             // Set tutorial text
             tutorialText = "Pull down to refresh"
             
@@ -572,44 +574,30 @@ struct DiscoverView: View {
                 tutorialBackgroundOpacity = 0.3
             }
             
-            // First pull down animation
-            withAnimation(.easeOut(duration: 1.2)) {
+            // Pull down animation
+            withAnimation(.easeOut(duration: 1.0)) {
                 contentOffset = 100
-                // Don't show refresh indicator during tutorial
             }
             
-            // Hold for a moment
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // Hold for a moment and then spring back
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 // Spring back up
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0)) {
                     contentOffset = 0
                 }
                 
-                // Wait and repeat once more
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    // Second pull down
-                    withAnimation(.easeOut(duration: 1.2)) {
-                        contentOffset = 100
+                // Clear tutorial text after animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        tutorialText = ""
+                        tutorialBackgroundOpacity = 0
                     }
                     
-                    // Hold and spring back
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0)) {
-                            contentOffset = 0
-                        }
-                        
-                        // Clear tutorial text after animation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                tutorialText = ""
-                                tutorialBackgroundOpacity = 0
-                            }
-                        }
-                        
-                        // Mark tutorial as complete
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            showRefreshTutorial = false
-                        }
+                    // Mark tutorial as complete and save to UserDefaults
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showRefreshTutorial = false
+                        // Save that tutorial has been shown
+                        UserDefaults.standard.set(true, forKey: "hasShownPullToRefreshTutorial")
                     }
                 }
             }
