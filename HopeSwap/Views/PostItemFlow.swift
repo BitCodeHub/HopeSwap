@@ -1082,7 +1082,6 @@ struct StepThreeView: View {
                         }
                         
                     }
-                }
             }
         }
         .onTapGesture {
