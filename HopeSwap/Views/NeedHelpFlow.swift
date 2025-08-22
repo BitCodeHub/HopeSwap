@@ -166,36 +166,26 @@ struct NeedHelpFlow: View {
     
     var headerView: some View {
         HStack {
-            Button(action: { 
-                if currentStep > 1 {
-                    currentStep -= 1
-                } else {
-                    dismiss()
-                }
-            }) {
-                Image(systemName: currentStep > 1 ? "chevron.left" : "xmark")
-                    .font(.title3)
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-            }
-            
-            Spacer()
-            
-            VStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("I Need Help")
-                    .font(.headline)
-                    .foregroundColor(.white)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(Color.hopeOrange)
                 
                 Text("Step \(currentStep) of 4")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundColor(.gray)
             }
             
             Spacer()
             
-            // Placeholder for alignment
-            Color.clear
-                .frame(width: 44, height: 44)
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.hopeDarkSecondary))
+            }
         }
         .padding()
     }
@@ -761,48 +751,46 @@ struct NeedHelpFlow: View {
     
     var bottomNavigation: some View {
         HStack(spacing: 16) {
-            if currentStep < 4 {
-                Button(action: { currentStep += 1 }) {
+            if currentStep > 1 {
+                Button(action: previousStep) {
                     HStack {
-                        Text("Continue")
-                            .font(.headline)
-                        Image(systemName: "arrow.right")
-                            .font(.headline)
+                        Image(systemName: "chevron.left")
+                        Text("Back")
                     }
-                    .foregroundColor(Color.hopeDarkBg)
+                    .font(.headline)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 18)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(canProceed() ? Color.hopeOrange : Color.gray)
-                    )
-                }
-                .disabled(!canProceed())
-            } else {
-                Button(action: postHelpRequest) {
-                    HStack {
-                        Image(systemName: "hand.raised.fill")
-                            .font(.headline)
-                        Text(donationAmount > 0 ? String(format: "Post for $%.2f", donationAmount) : "Post for Free")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(Color.hopeDarkBg)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.hopeOrange)
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.hopeDarkSecondary)
                     )
                 }
             }
+            
+            Button(action: nextStep) {
+                HStack {
+                    Text(currentStep == 4 ? 
+                        (showListingFee ? "Post Request ($1 fee)" : 
+                            (donationAmount > 0 ? "Donate $\(String(format: "%.0f", donationAmount)) & Post" : "Post for Free")
+                        ) : "Next")
+                    if currentStep < 4 {
+                        Image(systemName: "chevron.right")
+                    }
+                }
+                .font(.headline)
+                .foregroundColor(Color.hopeDarkBg)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(canProceed() ? Color.hopeOrange : Color.gray.opacity(0.3))
+                )
+            }
+            .disabled(!canProceed())
         }
         .padding(.horizontal)
-        .padding(.vertical, 20)
-        .background(
-            Color.hopeDarkBg
-                .shadow(color: .black.opacity(0.3), radius: 10, y: -5)
-        )
+        .padding(.bottom, 30)
     }
     
     private func canProceed() -> Bool {
@@ -817,6 +805,24 @@ struct NeedHelpFlow: View {
             return true // At least offer gratitude
         default:
             return true
+        }
+    }
+    
+    func nextStep() {
+        if currentStep < 4 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStep += 1
+            }
+        } else {
+            postHelpRequest()
+        }
+    }
+    
+    func previousStep() {
+        if currentStep > 1 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStep -= 1
+            }
         }
     }
     
