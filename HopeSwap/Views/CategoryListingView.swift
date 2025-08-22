@@ -47,30 +47,67 @@ struct CategoryListingView: View {
     ]
     
     var body: some View {
-        NavigationView {
+        ZStack {
+            Color.hopeDarkBg
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
-                // Items grid
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(filteredItems) { item in
-                            DiscoverItemCard(item: item, isCompact: false)
-                                .onTapGesture {
-                                    selectedItem = item
-                                }
-                        }
+                // Custom header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(categoryTitle)
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("\(filteredItems.count) items")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
                     }
-                    .padding()
-                }
-            }
-            .background(Color.hopeDarkBg)
-            .navigationTitle(categoryTitle)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                    
+                    Spacer()
+                    
                     Button("Done") {
                         dismiss()
                     }
+                    .font(.headline)
                     .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.white.opacity(0.2))
+                    )
+                }
+                .padding()
+                .padding(.top, 50)
+                
+                // Items grid
+                if filteredItems.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("No items found")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                        Text("Try adjusting your filters")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(filteredItems) { item in
+                                DiscoverItemCard(item: item, isCompact: false)
+                                    .onTapGesture {
+                                        selectedItem = item
+                                    }
+                            }
+                        }
+                        .padding()
+                    }
                 }
             }
         }

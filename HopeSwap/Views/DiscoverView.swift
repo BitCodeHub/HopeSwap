@@ -231,13 +231,13 @@ struct DiscoverView: View {
                         }
                         
                         ScrollView {
-                            VStack(spacing: 24) {
+                            VStack(spacing: 32) {
                                 // Show category sections if no filters applied
                                 if searchText.isEmpty && selectedCategory == nil {
                                     // Newly listed section
                                     CategorySection(
                                         title: "Newly listed",
-                                        items: displayedItems.filter { $0.isJustListed }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.isJustListed }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Newly listed"
@@ -250,7 +250,7 @@ struct DiscoverView: View {
                                     // Sell section
                                     CategorySection(
                                         title: "Sell",
-                                        items: displayedItems.filter { $0.listingType == .sell }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.listingType == .sell }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Sell"
@@ -263,7 +263,7 @@ struct DiscoverView: View {
                                     // Trade section
                                     CategorySection(
                                         title: "Trade",
-                                        items: displayedItems.filter { $0.listingType == .trade }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.listingType == .trade }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Trade"
@@ -276,7 +276,7 @@ struct DiscoverView: View {
                                     // Give Away section
                                     CategorySection(
                                         title: "Give Away",
-                                        items: displayedItems.filter { $0.listingType == .giveAway }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.listingType == .giveAway }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Give Away"
@@ -289,7 +289,7 @@ struct DiscoverView: View {
                                     // Need Help section
                                     CategorySection(
                                         title: "Need Help",
-                                        items: displayedItems.filter { $0.listingType == .needHelp }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.listingType == .needHelp }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Need Help"
@@ -302,7 +302,7 @@ struct DiscoverView: View {
                                     // Events section
                                     CategorySection(
                                         title: "Events",
-                                        items: displayedItems.filter { $0.listingType == .event }.prefix(10).map { $0 },
+                                        items: displayedItems.filter { $0.listingType == .event }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Events"
@@ -318,7 +318,7 @@ struct DiscoverView: View {
                                         subtitle: "Carpool, Lunch, Walking & Workout",
                                         items: displayedItems.filter { 
                                             [.carpool, .lunchBuddy, .walkingBuddy, .workoutBuddy].contains($0.listingType)
-                                        }.prefix(10).map { $0 },
+                                        }.prefix(4).map { $0 },
                                         selectedItem: $selectedItem,
                                         onSeeAll: { 
                                             selectedCategoryTitle = "Find a Buddy"
@@ -658,6 +658,11 @@ struct CategorySection: View {
     @Binding var selectedItem: Item?
     let onSeeAll: () -> Void
     
+    let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
@@ -685,7 +690,7 @@ struct CategorySection: View {
             }
             .padding(.horizontal)
             
-            // Items
+            // Items in grid
             if items.isEmpty {
                 Text("No items in this category yet")
                     .font(.subheadline)
@@ -693,17 +698,15 @@ struct CategorySection: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 40)
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(items) { item in
-                            DiscoverItemCard(item: item, isCompact: true)
-                                .onTapGesture {
-                                    selectedItem = item
-                                }
-                        }
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(items.prefix(4)) { item in
+                        DiscoverItemCard(item: item, isCompact: false)
+                            .onTapGesture {
+                                selectedItem = item
+                            }
                     }
-                    .padding(.horizontal)
                 }
+                .padding(.horizontal)
             }
         }
     }

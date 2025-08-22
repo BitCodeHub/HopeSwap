@@ -15,7 +15,6 @@ struct DiscoverItemCard: View {
     var imagePlaceholder: some View {
         Rectangle()
             .fill(Color.gray.opacity(0.3))
-            .frame(height: isCompact ? 160 : 200)
             .overlay(
                 Image(systemName: "photo")
                     .font(.system(size: 40))
@@ -24,88 +23,101 @@ struct DiscoverItemCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Image with overlay badges
-            ZStack(alignment: .topLeading) {
-                // Background image
-                Group {
-                    if let firstImage = item.images.first {
-                        if firstImage.starts(with: "data:image") {
-                            // Handle base64 images
-                            if let data = Data(base64Encoded: String(firstImage.dropFirst("data:image/jpeg;base64,".count))),
-                               let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(minWidth: 0, maxWidth: .infinity)
-                                    .frame(height: isCompact ? 160 : 200)
+        VStack(alignment: .leading, spacing: 8) {
+            // Image with overlays
+            GeometryReader { geometry in
+                ZStack {
+                    // Background image
+                    Group {
+                        if let firstImage = item.images.first {
+                            if firstImage.starts(with: "data:image") {
+                                // Handle base64 images
+                                if let data = Data(base64Encoded: String(firstImage.dropFirst("data:image/jpeg;base64,".count))),
+                                   let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: geometry.size.width, height: geometry.size.width)
+                                } else {
+                                    imagePlaceholder
+                                        .frame(width: geometry.size.width, height: geometry.size.width)
+                                }
                             } else {
-                                imagePlaceholder
+                                // Handle URL images
+                                AsyncImage(url: URL(string: firstImage)) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: geometry.size.width, height: geometry.size.width)
+                                } placeholder: {
+                                    imagePlaceholder
+                                        .frame(width: geometry.size.width, height: geometry.size.width)
+                                }
                             }
                         } else {
-                            // Handle URL images
-                            AsyncImage(url: URL(string: firstImage)) { image in
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(minWidth: 0, maxWidth: .infinity)
-                                    .frame(height: isCompact ? 160 : 200)
-                            } placeholder: {
-                                imagePlaceholder
+                            imagePlaceholder
+                                .frame(width: geometry.size.width, height: geometry.size.width)
+                        }
+                    }
+                    .clipped()
+                    
+                    // Price overlay at bottom left
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Text(priceText)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.7))
+                                )
+                            Spacer()
+                        }
+                        .padding(12)
+                    }
+                    
+                    // Action icons at bottom right
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            HStack(spacing: 8) {
+                                Button(action: {}) {
+                                    Image(systemName: "cart")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Circle().fill(Color.black.opacity(0.5)))
+                                }
+                                
+                                Button(action: {}) {
+                                    Image(systemName: "square.and.pencil")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Circle().fill(Color.black.opacity(0.5)))
+                                }
                             }
                         }
-                    } else {
-                        imagePlaceholder
+                        .padding(12)
                     }
                 }
-                .clipped()
-                
-                // Badges
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if item.isJustListed {
-                            Badge(text: "Just listed", backgroundColor: .white, textColor: .black)
-                        }
-                        if item.isNearby {
-                            Badge(text: "Nearby", backgroundColor: .white, textColor: .black)
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(8)
             }
-            .frame(height: isCompact ? 160 : 200)
+            .aspectRatio(1, contentMode: .fit)
             .clipped()
+            .cornerRadius(12)
             
-            // Item details
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(priceText)
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    if item.price == 0 || item.price == nil {
-                        Text("•")
-                            .foregroundColor(.gray)
-                    }
-                }
-                
-                Text(item.title)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .lineLimit(2)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.hopeDarkSecondary)
+            // Title below image
+            Text(item.title)
+                .font(.system(size: 14))
+                .foregroundColor(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(width: isCompact ? 160 : nil)
-        .background(Color.hopeDarkSecondary)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
     }
 }
 
