@@ -67,106 +67,35 @@ struct PostItemFlow: View {
                 
                 VStack(spacing: 0) {
                     // Header
-                    HStack {
-                        Spacer()
-                        Text("Post an Item")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                        Spacer()
-                    }
-                    .overlay(alignment: .trailing) {
-                        Button(action: { dismiss() }) {
-                            Image(systemName: "xmark")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                        }
-                    }
-                    .padding()
+                    headerView
                     
-                    // Content based on step
-                    Group {
-                        switch currentStep {
-                        case 1:
-                            StepOneView(
-                                title: $title,
-                                description: $description,
-                                selectedImages: $selectedImages,
-                                showingImagePicker: $showingImagePicker,
-                                showingCamera: $showingCamera
-                            )
-                        case 2:
-                            StepTwoView(
-                                category: $selectedCategory,
-                                condition: $selectedCondition,
-                                location: $location
-                            )
-                        case 3:
-                            StepThreeView(
-                                isTradeItem: isTradeItem,
-                                price: $price,
-                                priceIsFirm: $priceIsFirm,
-                                lookingFor: $lookingFor,
-                                acceptableItems: $acceptableItems,
-                                tradeSuggestions: $tradeSuggestions,
-                                openToOffers: $openToOffers
-                            )
-                        case 4:
-                            StepFourView(
-                                title: title,
-                                description: description,
-                                category: selectedCategory,
-                                condition: selectedCondition,
-                                location: location,
-                                images: selectedImages,
-                                price: isTradeItem ? nil : Double(price),
-                                priceIsFirm: priceIsFirm,
-                                isTradeItem: isTradeItem,
-                                lookingFor: lookingFor,
-                                acceptableItems: acceptableItems,
-                                tradeSuggestions: tradeSuggestions,
-                                openToOffers: openToOffers,
-                                showListingFee: $showListingFee,
-                                donationAmount: $donationAmount,
-                                selectedDonationOption: $selectedDonationOption,
-                                customDonationAmount: $customDonationAmount,
-                                onPost: postItem
-                            )
-                        default:
-                            EmptyView()
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Progress and Next button
-                    VStack(spacing: 20) {
-                        ProgressIndicator(
-                            currentStep: currentStep,
-                            isTradeItem: isTradeItem
-                        )
-                        
-                        Button(action: nextStep) {
-                            Text(currentStep == 4 ? 
-                                (isTradeItem ? "Post Item" : 
-                                    (showListingFee ? "Post Item ($1 fee)" : 
-                                        (donationAmount > 0 ? "Post Item (donate $\(String(format: "%.0f", donationAmount)))" : "Post Item (free)")
-                                    )
-                                ) : "Next")
-                                .font(.headline)
-                                .foregroundColor(Color.hopeDarkBg)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 18)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(canProceed ? Color.hopeOrange : Color.gray.opacity(0.3))
-                                )
-                        }
-                        .disabled(!canProceed)
+                    // Progress bar
+                    ProgressBar(currentStep: currentStep, totalSteps: 4)
                         .padding(.horizontal)
+                        .padding(.bottom, 20)
+                    
+                    // Content
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            switch currentStep {
+                            case 1:
+                                stepOneContent
+                            case 2:
+                                stepTwoContent
+                            case 3:
+                                stepThreeContent
+                            case 4:
+                                stepFourContent
+                            default:
+                                EmptyView()
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.bottom, 30)
+                    
+                    // Bottom navigation
+                    bottomNavigation
                 }
             }
             .navigationBarHidden(true)
@@ -190,6 +119,134 @@ struct PostItemFlow: View {
                         "Your item has been listed successfully for free. Thank you for your $\(String(format: "%.0f", donationAmount)) donation to pediatric cancer research!" :
                         "Your item has been listed successfully for free.")))
         }
+    }
+    
+    // MARK: - Header View
+    var headerView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(isTradeItem ? "Trade Item" : "Sell Item")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(isTradeItem ? Color.hopeBlue : Color.hopeGreen)
+                
+                Text("Step \(currentStep) of 4")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(Color.hopeDarkSecondary))
+            }
+        }
+        .padding()
+    }
+    
+    // MARK: - Bottom Navigation
+    var bottomNavigation: some View {
+        HStack(spacing: 16) {
+            if currentStep > 1 {
+                Button(action: previousStep) {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                }
+            }
+            
+            Button(action: nextStep) {
+                HStack {
+                    Text(currentStep == 4 ? 
+                        (isTradeItem ? "Post Trade" : 
+                            (showListingFee ? "Post Item ($1 fee)" : 
+                                (donationAmount > 0 ? "Donate $\(String(format: "%.0f", donationAmount)) & Post" : "Post for Free")
+                            )
+                        ) : "Next")
+                    if currentStep < 4 {
+                        Image(systemName: "chevron.right")
+                    }
+                }
+                .font(.headline)
+                .foregroundColor(Color.hopeDarkBg)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(canProceed ? (isTradeItem ? Color.hopeBlue : Color.hopeGreen) : Color.gray.opacity(0.3))
+                )
+            }
+            .disabled(!canProceed)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 30)
+    }
+    
+    // MARK: - Step Content Views
+    var stepOneContent: some View {
+        StepOneView(
+            title: $title,
+            description: $description,
+            selectedImages: $selectedImages,
+            showingImagePicker: $showingImagePicker,
+            showingCamera: $showingCamera
+        )
+    }
+    
+    var stepTwoContent: some View {
+        StepTwoView(
+            category: $selectedCategory,
+            condition: $selectedCondition,
+            location: $location
+        )
+    }
+    
+    var stepThreeContent: some View {
+        StepThreeView(
+            isTradeItem: isTradeItem,
+            price: $price,
+            priceIsFirm: $priceIsFirm,
+            lookingFor: $lookingFor,
+            acceptableItems: $acceptableItems,
+            tradeSuggestions: $tradeSuggestions,
+            openToOffers: $openToOffers
+        )
+    }
+    
+    var stepFourContent: some View {
+        StepFourView(
+            title: title,
+            description: description,
+            category: selectedCategory,
+            condition: selectedCondition,
+            location: location,
+            images: selectedImages,
+            price: isTradeItem ? nil : Double(price),
+            priceIsFirm: priceIsFirm,
+            isTradeItem: isTradeItem,
+            lookingFor: lookingFor,
+            acceptableItems: acceptableItems,
+            tradeSuggestions: tradeSuggestions,
+            openToOffers: openToOffers,
+            showListingFee: $showListingFee,
+            donationAmount: $donationAmount,
+            selectedDonationOption: $selectedDonationOption,
+            customDonationAmount: $customDonationAmount,
+            onPost: postItem
+        )
     }
     
     var canProceed: Bool {
@@ -219,6 +276,14 @@ struct PostItemFlow: View {
             }
         } else {
             postItem()
+        }
+    }
+    
+    func previousStep() {
+        if currentStep > 1 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStep -= 1
+            }
         }
     }
     
@@ -265,16 +330,13 @@ struct StepOneView: View {
     @State private var draggedItem: IndexedImage?
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                photoSection
-                titleSection
-                descriptionSection
-            }
-            .padding()
-            .onTapGesture {
-                isInputActive = false
-            }
+        VStack(spacing: 24) {
+            photoSection
+            titleSection
+            descriptionSection
+        }
+        .onTapGesture {
+            isInputActive = false
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -478,52 +540,49 @@ struct StepOneView: View {
     }
     
     var titleSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Title")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            Label("What are you selling?", systemImage: "tag")
+                .font(.title3)
+                .fontWeight(.semibold)
                 .foregroundColor(.white)
             
             TextField("", text: $title)
                 .placeholder(when: title.isEmpty) {
-                    Text("For example: Brand, model, color, and size.")
+                    Text("e.g., iPhone 12 Pro, Vintage Leather Jacket")
                         .foregroundColor(.gray)
                 }
                 .foregroundColor(.white)
                 .padding()
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.hopeDarkSecondary)
                 )
                 .focused($isInputActive)
         }
     }
     
     var descriptionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Description (optional)")
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Tell us more about it", systemImage: "text.alignleft")
                 .font(.headline)
                 .foregroundColor(.white)
             
-            ZStack(alignment: .topLeading) {
-                if description.isEmpty {
-                    Text("Items with a detailed description sell faster!")
+            TextEditor(text: $description)
+                .placeholder(when: description.isEmpty) {
+                    Text("Describe the item condition, features, reason for selling...")
                         .foregroundColor(.gray)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 20)
-                        .allowsHitTesting(false)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 8)
                 }
-                
-                TextEditor(text: $description)
-                    .foregroundColor(.white)
-                    .scrollContentBackground(.hidden)
-                    .padding(12)
-                    .frame(minHeight: 150)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                    .focused($isInputActive)
-            }
+                .foregroundColor(.white)
+                .padding(8)
+                .frame(minHeight: 120)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.hopeDarkSecondary)
+                )
+                .scrollContentBackground(.hidden)
+                .focused($isInputActive)
         }
     }
     
@@ -818,164 +877,156 @@ struct StepThreeView: View {
     @FocusState private var isInputActive: Bool
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 30) {
-                if isTradeItem {
-                    // Trade content
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // Header icon
-                            Image(systemName: "arrow.left.arrow.right.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(Color.hopeGreen)
-                                .padding(.top, 10)
+        VStack(spacing: 24) {
+            if isTradeItem {
+                // Trade content
+                VStack(spacing: 24) {
+                    // Title
+                    VStack(spacing: 8) {
+                        Text("Trade Preferences")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("Tell us what you're looking to trade for")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                             
-                            // Title
-                            Text("Trade Preferences")
+                    // What I'm looking for section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("What I'm looking for", systemImage: "magnifyingglass")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        TextEditor(text: $lookingFor)
+                            .placeholder(when: lookingFor.isEmpty) {
+                                Text("Describe items you'd like to trade for (e.g., electronics, books, toys)")
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .frame(minHeight: 100)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                            .scrollContentBackground(.hidden)
+                            .focused($isInputActive)
+                    }
+                            
+                    // What's acceptable section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("What's acceptable", systemImage: "checkmark.circle")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        TextEditor(text: $acceptableItems)
+                            .placeholder(when: acceptableItems.isEmpty) {
+                                Text("List specific items or categories you're willing to accept")
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .frame(minHeight: 100)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                            .scrollContentBackground(.hidden)
+                            .focused($isInputActive)
+                    }
+                            
+                    // Trade suggestions section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Other trade suggestions", systemImage: "lightbulb")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        TextEditor(text: $tradeSuggestions)
+                            .placeholder(when: tradeSuggestions.isEmpty) {
+                                Text("Any creative trade ideas or flexible options?")
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .frame(minHeight: 100)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                            .scrollContentBackground(.hidden)
+                            .focused($isInputActive)
+                    }
+                            
+                    // Trade flexibility toggle
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Open to all offers")
+                                .font(.body)
+                                .foregroundColor(.white)
+                            Text("Let people know you're flexible")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $openToOffers)
+                            .toggleStyle(SwitchToggleStyle(tint: Color.hopeBlue))
+                            .labelsHidden()
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkSecondary)
+                    )
+                            
+                    // Helper text
+                    VStack(spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .font(.title3)
+                            .foregroundColor(Color.hopeBlue)
+                        
+                        Text("Be specific about what you want to increase your chances of a successful trade!")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 20)
+                }
+                } else {
+                    // Sale content
+                    VStack(spacing: 24) {
+                        // Title
+                        VStack(spacing: 8) {
+                            Text("Pricing Details")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
                             
-                            // What I'm looking for section
-                            VStack(alignment: .leading, spacing: 12) {
-                                Label("What I'm looking for", systemImage: "magnifyingglass")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                
-                                ZStack(alignment: .topLeading) {
-                                    if lookingFor.isEmpty {
-                                        Text("Describe items you'd like to trade for (e.g., electronics, books, toys)")
-                                            .foregroundColor(.gray)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 20)
-                                            .allowsHitTesting(false)
-                                    }
-                                    
-                                    TextEditor(text: $lookingFor)
-                                        .foregroundColor(.white)
-                                        .scrollContentBackground(.hidden)
-                                        .padding(12)
-                                        .frame(minHeight: 100)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .focused($isInputActive)
-                                }
-                            }
-                            .padding(.horizontal)
-                            
-                            // What's acceptable section
-                            VStack(alignment: .leading, spacing: 12) {
-                                Label("What's acceptable", systemImage: "checkmark.circle")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                
-                                ZStack(alignment: .topLeading) {
-                                    if acceptableItems.isEmpty {
-                                        Text("List specific items or categories you're willing to accept")
-                                            .foregroundColor(.gray)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 20)
-                                            .allowsHitTesting(false)
-                                    }
-                                    
-                                    TextEditor(text: $acceptableItems)
-                                        .foregroundColor(.white)
-                                        .scrollContentBackground(.hidden)
-                                        .padding(12)
-                                        .frame(minHeight: 100)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .focused($isInputActive)
-                                }
-                            }
-                            .padding(.horizontal)
-                            
-                            // Trade suggestions section
-                            VStack(alignment: .leading, spacing: 12) {
-                                Label("Other trade suggestions", systemImage: "lightbulb")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                
-                                ZStack(alignment: .topLeading) {
-                                    if tradeSuggestions.isEmpty {
-                                        Text("Any creative trade ideas or flexible options?")
-                                            .foregroundColor(.gray)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 20)
-                                            .allowsHitTesting(false)
-                                    }
-                                    
-                                    TextEditor(text: $tradeSuggestions)
-                                        .foregroundColor(.white)
-                                        .scrollContentBackground(.hidden)
-                                        .padding(12)
-                                        .frame(minHeight: 100)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .focused($isInputActive)
-                                }
-                            }
-                            .padding(.horizontal)
-                            
-                            // Trade flexibility toggle
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Open to all offers")
-                                        .font(.body)
-                                        .foregroundColor(.white)
-                                    Text("Let people know you're flexible")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                                
-                                Toggle("", isOn: $openToOffers)
-                                    .toggleStyle(SwitchToggleStyle(tint: Color.hopeGreen))
-                                    .labelsHidden()
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.white.opacity(0.05))
-                            )
-                            .padding(.horizontal)
-                            
-                            // Helper text
-                            VStack(spacing: 8) {
-                                Image(systemName: "info.circle")
-                                    .font(.title3)
-                                    .foregroundColor(Color.hopeGreen)
-                                
-                                Text("Be specific about what you want to increase your chances of a successful trade!")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal, 40)
-                            .padding(.bottom, 20)
+                            Text("Set a competitive price for your item")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
                         }
-                    }
-                } else {
-                    // Sale content
-                    VStack(spacing: 24) {
+                        
                         // Price input section
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Set your price")
-                                .font(.title2)
-                                .fontWeight(.bold)
+                            Label("Item price", systemImage: "dollarsign.circle")
+                                .font(.headline)
                                 .foregroundColor(.white)
                             
                             HStack {
                                 Text("$")
                                     .font(.title2)
-                                    .foregroundColor(Color.hopeBlue)
+                                    .foregroundColor(Color.hopeGreen)
                                 
                                 TextField("0", text: $price)
                                     .font(.title2)
@@ -994,17 +1045,21 @@ struct StepThreeView: View {
                             }
                             .padding()
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
                             )
                         }
-                        .padding(.horizontal)
                         
                         // Price is firm toggle
                         HStack {
-                            Text("Price is firm")
-                                .font(.body)
-                                .foregroundColor(.white)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Price is firm")
+                                    .font(.body)
+                                    .foregroundColor(.white)
+                                Text("I'm not accepting lower offers")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
                             
                             Spacer()
                             
@@ -1014,10 +1069,9 @@ struct StepThreeView: View {
                         }
                         .padding()
                         .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.05))
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.hopeDarkSecondary)
                         )
-                        .padding(.horizontal)
                         
                         if priceIsFirm {
                             Text("Buyers will see that your price is non-negotiable")
@@ -1027,38 +1081,9 @@ struct StepThreeView: View {
                                 .padding(.horizontal)
                         }
                         
-                        Divider()
-                            .background(Color.gray.opacity(0.3))
-                            .padding(.vertical)
-                        
-                        // Donation info
-                        VStack(spacing: 16) {
-                            Image(systemName: "heart.circle.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(Color.hopePink)
-                            
-                            Text("Support a Great Cause")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            
-                            Text("Your $1 listing fee goes directly to pediatric cancer research")
-                                .font(.body)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.gray)
-                                .padding(.horizontal)
-                            
-                            HStack {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(Color.hopeGreen)
-                                Text("100% of fees donated")
-                                    .foregroundColor(.white)
-                            }
-                            .font(.subheadline)
-                        }
                     }
                 }
             }
-            .padding(.vertical)
         }
         .onTapGesture {
             isInputActive = false
