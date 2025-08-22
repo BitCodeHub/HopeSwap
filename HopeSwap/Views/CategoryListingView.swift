@@ -7,39 +7,56 @@ struct CategoryListingView: View {
     let categoryTitle: String
     let listingTypes: [ListingType]?
     let filterByJustListed: Bool
+    let locationFilter: String?
     
     @State private var selectedItem: Item? = nil
     
     // Initialize for specific listing type
-    init(categoryTitle: String, listingType: ListingType) {
+    init(categoryTitle: String, listingType: ListingType, locationFilter: String? = nil) {
         self.categoryTitle = categoryTitle
         self.listingTypes = [listingType]
         self.filterByJustListed = false
+        self.locationFilter = locationFilter
     }
     
     // Initialize for multiple listing types (like Find a Buddy)
-    init(categoryTitle: String, listingTypes: [ListingType]) {
+    init(categoryTitle: String, listingTypes: [ListingType], locationFilter: String? = nil) {
         self.categoryTitle = categoryTitle
         self.listingTypes = listingTypes
         self.filterByJustListed = false
+        self.locationFilter = locationFilter
     }
     
     // Initialize for special filters (like Newly listed)
-    init(categoryTitle: String, filterByJustListed: Bool) {
+    init(categoryTitle: String, filterByJustListed: Bool, locationFilter: String? = nil) {
         self.categoryTitle = categoryTitle
         self.listingTypes = nil
         self.filterByJustListed = filterByJustListed
+        self.locationFilter = locationFilter
     }
     
     var filteredItems: [Item] {
+        var items = dataManager.items
+        
+        // Apply location filter if present
+        if let location = locationFilter, !location.isEmpty {
+            let cityName = location.components(separatedBy: ",").first ?? ""
+            if !cityName.isEmpty && !cityName.contains("Unknown ZIP") {
+                items = items.filter { item in
+                    item.location.lowercased().contains(cityName.lowercased())
+                }
+            }
+        }
+        
+        // Apply category/type filters
         if filterByJustListed {
-            return dataManager.items.filter { $0.isJustListed }
+            return items.filter { $0.isJustListed }
         } else if let types = listingTypes {
-            return dataManager.items.filter { item in
+            return items.filter { item in
                 types.contains(item.listingType)
             }
         } else {
-            return dataManager.items
+            return items
         }
     }
     

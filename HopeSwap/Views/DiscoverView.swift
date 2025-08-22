@@ -424,20 +424,22 @@ struct DiscoverView: View {
             ZStack {
                 Color.hopeDarkBg.ignoresSafeArea()
                 
+                let currentLocationFilter = (!locationManager.isUsingCurrentLocation || !searchedLocation.isEmpty) ? (searchedLocation.isEmpty ? locationManager.locationString : searchedLocation) : nil
+                
                 if filterByJustListed {
-                    CategoryListingView(categoryTitle: selectedCategoryTitle, filterByJustListed: true)
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, filterByJustListed: true, locationFilter: currentLocationFilter)
                         .environmentObject(dataManager)
                 } else if let types = selectedListingTypes {
                     if types.count == 1, let type = types.first {
-                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingType: type)
+                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingType: type, locationFilter: currentLocationFilter)
                             .environmentObject(dataManager)
                     } else {
-                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: types)
+                        CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: types, locationFilter: currentLocationFilter)
                             .environmentObject(dataManager)
                     }
                 } else {
                     // Fallback if no filter is set
-                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: ListingType.allCases)
+                    CategoryListingView(categoryTitle: selectedCategoryTitle, listingTypes: ListingType.allCases, locationFilter: currentLocationFilter)
                         .environmentObject(dataManager)
                 }
             }

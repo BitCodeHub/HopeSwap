@@ -29,7 +29,7 @@ struct Item: Identifiable, Codable, Equatable {
     // New properties for Discover view
     var isJustListed: Bool {
         let hoursSincePosted = Date().timeIntervalSince(postedDate) / 3600
-        return hoursSincePosted < 24
+        return hoursSincePosted <= 24
     }
     
     var isNearby: Bool = false

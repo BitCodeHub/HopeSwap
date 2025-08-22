@@ -37,12 +37,12 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-86400 * 2), price: 50.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600 * 4), price: 50.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
                 item.images = ["https://images.unsplash.com/photo-1502394202744-021cfbb17454?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-86400), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-3600 * 6), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
                 item.images = [
                     "https://images.unsplash.com/photo-1467043198406-dc953a3defa0?w=400",
                     "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400",
