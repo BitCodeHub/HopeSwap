@@ -1288,8 +1288,10 @@ struct LunchBuddyFlow: View {
             listingType: .lunchBuddy
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem)
+            showingSuccessAlert = true
+        }
     }
     
     private func formatTime(_ date: Date) -> String {

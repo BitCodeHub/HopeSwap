@@ -1101,8 +1101,10 @@ struct WalkingBuddyFlow: View {
             listingType: .walkingBuddy
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem)
+            showingSuccessAlert = true
+        }
     }
 }
 

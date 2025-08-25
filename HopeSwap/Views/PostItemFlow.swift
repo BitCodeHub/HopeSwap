@@ -288,13 +288,6 @@ struct PostItemFlow: View {
     }
     
     func postItem() {
-        // Convert UIImages to base64 strings for storage
-        // In a real app, you would upload these to a server and get URLs back
-        let imageStrings = selectedImages.compactMap { image -> String? in
-            guard let data = image.jpegData(compressionQuality: 0.7) else { return nil }
-            return "data:image/jpeg;base64,\(data.base64EncodedString())"
-        }
-        
         let newItem = Item(
             title: title,
             description: description,
@@ -309,12 +302,14 @@ struct PostItemFlow: View {
             acceptableItems: isTradeItem ? acceptableItems : nil,
             tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
             openToOffers: isTradeItem ? openToOffers : false,
-            images: imageStrings,
+            images: [], // Empty initially, will be populated by Firebase
             listingType: isTradeItem ? .trade : .sell
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem, images: selectedImages)
+            showingSuccessAlert = true
+        }
     }
 }
 

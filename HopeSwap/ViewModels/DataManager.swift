@@ -1,20 +1,81 @@
 import Foundation
 import SwiftUI
+import FirebaseFirestore
+import FirebaseAuth
 
+@MainActor
 class DataManager: ObservableObject {
     @Published var items: [Item] = []
     @Published var favorites: Set<UUID> = []
     @Published var currentUser: User
     @Published var isDataLoaded = false
+    @Published var isLoading = false
+    @Published var errorMessage = ""
     
     static let shared = DataManager()
     
+    private let firestoreManager = FirestoreManager.shared
+    private let storageManager = StorageManager.shared
+    private var itemsListener: ListenerRegistration?
+    
     private init() {
         self.currentUser = User(username: "JohnDoe", email: "john@example.com")
-        // Don't load sample data in init to avoid initialization issues
+        setupRealtimeListener()
     }
     
-    func loadSampleData() {
+    deinit {
+        itemsListener?.remove()
+    }
+    
+    // Setup real-time listener for items
+    private func setupRealtimeListener() {
+        itemsListener = firestoreManager.listenToItems { [weak self] items in
+            DispatchQueue.main.async {
+                self?.items = items
+                self?.isDataLoaded = true
+            }
+        }
+    }
+    
+    // Load data from Firebase or sample data for development
+    func loadData() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = ""
+        }
+        
+        do {
+            // Try to load from Firebase first
+            let firebaseItems = try await firestoreManager.fetchItems()
+            
+            // If no items in Firebase, load sample data
+            if firebaseItems.isEmpty {
+                await loadSampleDataToFirebase()
+            } else {
+                await MainActor.run {
+                    items = firebaseItems
+                }
+            }
+            
+            await MainActor.run {
+                isDataLoaded = true
+            }
+        } catch {
+            print("Error loading data: \(error)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+            // Fallback to local sample data
+            loadSampleDataLocally()
+        }
+        
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+    
+    // Load sample data locally (fallback)
+    private func loadSampleDataLocally() {
         // Prevent loading data multiple times
         guard !isDataLoaded else { return }
         
@@ -186,16 +247,93 @@ class DataManager: ObservableObject {
             }
         }
         
-        // Update UI on main thread
-        DispatchQueue.main.async { [weak self] in
-            self?.isDataLoaded = true
+        isDataLoaded = true
+    }
+    
+    // Load sample data to Firebase (for first-time setup)
+    private func loadSampleDataToFirebase() async {
+        loadSampleDataLocally() // Create the items array
+        
+        // Upload sample items to Firebase
+        for item in items {
+            do {
+                _ = try await firestoreManager.createItem(item)
+            } catch {
+                print("Failed to upload sample item: \(item.title), error: \(error)")
+            }
         }
     }
     
-    func addItem(_ item: Item) {
-        items.insert(item, at: 0)
-        currentUser.itemsListed += 1
-        currentUser.totalDonated += 1
+    // Add item with Firebase integration
+    func addItem(_ item: Item, images: [UIImage] = []) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = ""
+        }
+        
+        do {
+            var newItem = item
+            
+            // Upload images first if any
+            if !images.isEmpty {
+                let itemId = UUID().uuidString
+                let optimizedImages = images.map { storageManager.optimizeImageForUpload($0) }
+                let imageUrls = try await storageManager.uploadItemImages(optimizedImages, itemId: itemId)
+                newItem.images = imageUrls
+            }
+            
+            // Create item in Firestore
+            let _ = try await firestoreManager.createItem(newItem)
+            
+            // Update local state (real-time listener will handle this automatically)
+            await MainActor.run {
+                currentUser.itemsListed += 1
+                currentUser.totalDonated += 1
+            }
+            
+        } catch {
+            print("Error adding item: \(error)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+    
+    // Delete item with Firebase integration
+    func deleteItem(_ item: Item) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = ""
+        }
+        
+        do {
+            // Delete from Firestore (use the document ID if available)
+            // Note: You might need to store the Firestore document ID in your Item model
+            
+            // Delete images from Storage
+            if !item.images.isEmpty {
+                await storageManager.deleteImages(urls: item.images)
+            }
+            
+            // Remove from local state (real-time listener will handle this automatically)
+            await MainActor.run {
+                items.removeAll { $0.id == item.id }
+            }
+            
+        } catch {
+            print("Error deleting item: \(error)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            isLoading = false
+        }
     }
     
     func toggleFavorite(_ itemId: UUID) {
@@ -208,6 +346,40 @@ class DataManager: ObservableObject {
     
     func getFavoriteItems() -> [Item] {
         items.filter { favorites.contains($0.id) }
+    }
+    
+    // Search items
+    func searchItems(query: String, category: String? = nil, location: String? = nil) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = ""
+        }
+        
+        do {
+            let searchResults = try await firestoreManager.searchItems(
+                query: query,
+                category: category,
+                location: location
+            )
+            
+            await MainActor.run {
+                items = searchResults
+            }
+        } catch {
+            print("Error searching items: \(error)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+    
+    // Refresh data
+    func refreshData() async {
+        await loadData()
     }
     
     func removeItem(_ item: Item) {

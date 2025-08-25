@@ -207,10 +207,11 @@ struct PostItemView: View {
             listingType: .sell
         )
         
-        dataManager.addItem(newItem)
-        
-        alertMessage = "Your item has been posted! Thank you for your $1 donation to pediatric cancer research."
-        showingAlert = true
+        Task {
+            await dataManager.addItem(newItem)
+            alertMessage = "Your item has been posted! Thank you for your $1 donation to pediatric cancer research."
+            showingAlert = true
+        }
     }
     
     func clearForm() {

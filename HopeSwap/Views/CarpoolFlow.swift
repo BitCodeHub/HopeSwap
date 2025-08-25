@@ -1181,8 +1181,10 @@ struct CarpoolFlow: View {
             listingType: .carpool
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem)
+            showingSuccessAlert = true
+        }
     }
 }
 

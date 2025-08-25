@@ -1106,8 +1106,10 @@ struct WorkoutBuddyFlow: View {
             listingType: .workoutBuddy
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem)
+            showingSuccessAlert = true
+        }
     }
 }
 

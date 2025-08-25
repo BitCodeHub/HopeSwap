@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import Firebase
 
 @main
 struct HopeSwapApp: App {
     init() {
+        // Initialize Firebase
+        FirebaseApp.configure()
         setupAppearance()
     }
     

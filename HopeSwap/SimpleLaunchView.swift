@@ -32,8 +32,8 @@ struct SimpleLaunchView: View {
                 }
                 
                 // Load data in background after UI is shown
-                DispatchQueue.global(qos: .userInitiated).async {
-                    dataManager.loadSampleData()
+                Task {
+                    await dataManager.loadData()
                 }
             }
         }

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import FirebaseFirestore
 
 struct Item: Identifiable, Codable, Equatable {
     let id: UUID
@@ -167,5 +168,168 @@ enum ListingType: String, Codable, CaseIterable {
         case .workoutBuddy: return "dumbbell"
         case .walkingBuddy: return "figure.walk"
         }
+    }
+}
+
+// MARK: - Firestore Support
+extension Item {
+    // Convert Item to dictionary for Firestore
+    func toDictionary() -> [String: Any] {
+        return [
+            "id": id.uuidString,
+            "title": title,
+            "description": description,
+            "price": price ?? 0,
+            "category": category.rawValue,
+            "condition": condition.rawValue,
+            "location": location,
+            "images": images,
+            "listingType": listingType.rawValue,
+            "postedDate": Timestamp(date: postedDate),
+            "status": status.rawValue,
+            "favoriteCount": favoriteCount,
+            "priceIsFirm": priceIsFirm,
+            "isTradeItem": isTradeItem,
+            "lookingFor": lookingFor ?? "",
+            "acceptableItems": acceptableItems ?? "",
+            "tradeSuggestions": tradeSuggestions ?? "",
+            "openToOffers": openToOffers,
+            "isNearby": isNearby,
+            "distance": distance ?? 0
+        ]
+    }
+    
+    // Create Item from Firestore document
+    static func fromFirestore(document: QueryDocumentSnapshot) throws -> Item {
+        let data = document.data()
+        
+        guard let idString = data["id"] as? String,
+              let id = UUID(uuidString: idString),
+              let title = data["title"] as? String,
+              let description = data["description"] as? String,
+              let categoryString = data["category"] as? String,
+              let category = Category(rawValue: categoryString),
+              let conditionString = data["condition"] as? String,
+              let condition = Condition(rawValue: conditionString),
+              let location = data["location"] as? String,
+              let images = data["images"] as? [String],
+              let listingTypeString = data["listingType"] as? String,
+              let listingType = ListingType(rawValue: listingTypeString),
+              let timestamp = data["postedDate"] as? Timestamp,
+              let statusString = data["status"] as? String,
+              let status = ItemStatus(rawValue: statusString) else {
+            throw NSError(domain: "FirestoreError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid item data in document: \(document.documentID)"])
+        }
+        
+        // Extract optional fields with defaults
+        let price = data["price"] as? Double
+        let finalPrice = (price == 0) ? nil : price
+        let favoriteCount = data["favoriteCount"] as? Int ?? 0
+        let priceIsFirm = data["priceIsFirm"] as? Bool ?? false
+        let isTradeItem = data["isTradeItem"] as? Bool ?? false
+        let lookingFor = data["lookingFor"] as? String
+        let acceptableItems = data["acceptableItems"] as? String
+        let tradeSuggestions = data["tradeSuggestions"] as? String
+        let openToOffers = data["openToOffers"] as? Bool ?? false
+        let isNearby = data["isNearby"] as? Bool ?? false
+        let distance = data["distance"] as? Double
+        
+        // Create a temporary userId (in production, you'd get this from the document)
+        let userId = UUID() // You might want to store userId as string in Firestore
+        
+        var item = Item(
+            id: id,
+            title: title,
+            description: description,
+            category: category,
+            condition: condition,
+            userId: userId,
+            location: location,
+            postedDate: timestamp.dateValue(),
+            price: finalPrice,
+            priceIsFirm: priceIsFirm,
+            isTradeItem: isTradeItem,
+            lookingFor: lookingFor?.isEmpty == true ? nil : lookingFor,
+            acceptableItems: acceptableItems?.isEmpty == true ? nil : acceptableItems,
+            tradeSuggestions: tradeSuggestions?.isEmpty == true ? nil : tradeSuggestions,
+            openToOffers: openToOffers,
+            images: images,
+            listingType: listingType
+        )
+        
+        item.status = status
+        item.favoriteCount = favoriteCount
+        item.isNearby = isNearby
+        item.distance = distance
+        
+        return item
+    }
+    
+    // Alternative fromFirestore that takes DocumentSnapshot (for real-time listeners)
+    static func fromFirestore(document: DocumentSnapshot) throws -> Item {
+        guard let data = document.data() else {
+            throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Document data not found"])
+        }
+        
+        guard let idString = data["id"] as? String,
+              let id = UUID(uuidString: idString),
+              let title = data["title"] as? String,
+              let description = data["description"] as? String,
+              let categoryString = data["category"] as? String,
+              let category = Category(rawValue: categoryString),
+              let conditionString = data["condition"] as? String,
+              let condition = Condition(rawValue: conditionString),
+              let location = data["location"] as? String,
+              let images = data["images"] as? [String],
+              let listingTypeString = data["listingType"] as? String,
+              let listingType = ListingType(rawValue: listingTypeString),
+              let timestamp = data["postedDate"] as? Timestamp,
+              let statusString = data["status"] as? String,
+              let status = ItemStatus(rawValue: statusString) else {
+            throw NSError(domain: "FirestoreError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid item data in document: \(document.documentID)"])
+        }
+        
+        // Extract optional fields with defaults
+        let price = data["price"] as? Double
+        let finalPrice = (price == 0) ? nil : price
+        let favoriteCount = data["favoriteCount"] as? Int ?? 0
+        let priceIsFirm = data["priceIsFirm"] as? Bool ?? false
+        let isTradeItem = data["isTradeItem"] as? Bool ?? false
+        let lookingFor = data["lookingFor"] as? String
+        let acceptableItems = data["acceptableItems"] as? String
+        let tradeSuggestions = data["tradeSuggestions"] as? String
+        let openToOffers = data["openToOffers"] as? Bool ?? false
+        let isNearby = data["isNearby"] as? Bool ?? false
+        let distance = data["distance"] as? Double
+        
+        // Create a temporary userId (in production, you'd get this from the document)
+        let userId = UUID() // You might want to store userId as string in Firestore
+        
+        var item = Item(
+            id: id,
+            title: title,
+            description: description,
+            category: category,
+            condition: condition,
+            userId: userId,
+            location: location,
+            postedDate: timestamp.dateValue(),
+            price: finalPrice,
+            priceIsFirm: priceIsFirm,
+            isTradeItem: isTradeItem,
+            lookingFor: lookingFor?.isEmpty == true ? nil : lookingFor,
+            acceptableItems: acceptableItems?.isEmpty == true ? nil : acceptableItems,
+            tradeSuggestions: tradeSuggestions?.isEmpty == true ? nil : tradeSuggestions,
+            openToOffers: openToOffers,
+            images: images,
+            listingType: listingType
+        )
+        
+        item.status = status
+        item.favoriteCount = favoriteCount
+        item.isNearby = isNearby
+        item.distance = distance
+        
+        return item
     }
 }

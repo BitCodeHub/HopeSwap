@@ -972,12 +972,14 @@ struct NeedHelpFlow: View {
             location: helpLocation == .atHome ? "At Home - Private" : helpLocation == .atWork ? (workLocation.isEmpty ? "At Work" : workLocation) : (location.isEmpty ? "Current Location" : location),
             price: 0,
             priceIsFirm: true,
-            images: selectedImages.compactMap { $0.jpegData(compressionQuality: 0.8)?.base64EncodedString() }.map { "data:image/jpeg;base64,\($0)" },
+            images: [], // Empty initially, will be populated by Firebase
             listingType: .needHelp
         )
         
-        dataManager.addItem(newItem)
-        showingSuccessAlert = true
+        Task {
+            await dataManager.addItem(newItem, images: selectedImages)
+            showingSuccessAlert = true
+        }
     }
 }
 
