@@ -25,12 +25,16 @@ struct LocationPickerView: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.hopeDarkBg
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
+        ZStack {
+            // Gradient background for better visual in sheet
+            LinearGradient(
+                gradient: Gradient(colors: [Color(hex: "0A1929"), Color(hex: "1C2B3B")]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
                     // Header
                     HStack {
                         Button(action: { dismiss() }) {
@@ -59,8 +63,8 @@ struct LocationPickerView: View {
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -71,14 +75,14 @@ struct LocationPickerView: View {
                                 ZStack {
                                     // Simple map using Map from MapKit
                                     Map(coordinateRegion: $mapRegion)
-                                        .frame(height: 180)
+                                        .frame(height: 140)
                                         .disabled(true)
                                     
                                     // Blue circle overlay to show radius
                                     Circle()
-                                        .fill(Color.hopeBlue.opacity(0.2))
-                                        .stroke(Color.hopeBlue.opacity(0.5), lineWidth: 2)
-                                        .frame(width: 150, height: 150)
+                                        .fill(Color(hex: "4285F4").opacity(0.2))
+                                        .stroke(Color(hex: "4285F4").opacity(0.5), lineWidth: 2)
+                                        .frame(width: 120, height: 120)
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -92,7 +96,7 @@ struct LocationPickerView: View {
                                 
                                 Text(searchRadius > 0 && searchRadius < 15 ? "\(Int(searchRadius)) mile radius" : searchRadius == 15 ? "Suggested radius" : "\(Int(searchRadius)) mile radius")
                                     .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(Color(hex: "B8BCC8"))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal)
@@ -113,7 +117,7 @@ struct LocationPickerView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.hopeBlue)
+                                .background(Color(hex: "4285F4"))
                                 .cornerRadius(10)
                             }
                             .padding(.horizontal)
@@ -132,7 +136,7 @@ struct LocationPickerView: View {
                                     Button(action: {}) {
                                         Text("See all")
                                             .font(.subheadline)
-                                            .foregroundColor(Color.hopeBlue)
+                                            .foregroundColor(Color(hex: "4285F4"))
                                     }
                                 }
                                 .padding(.horizontal)
@@ -167,7 +171,7 @@ struct LocationPickerView: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "mappin")
                                                     .font(.caption)
-                                                    .foregroundColor(.gray)
+                                                    .foregroundColor(Color(hex: "B8BCC8"))
                                                 
                                                 Text(location)
                                                     .font(.subheadline)
@@ -189,8 +193,7 @@ struct LocationPickerView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
-        }
+        .preferredColorScheme(.dark)
         .fullScreenCover(isPresented: $showLocationSearch) {
             LocationSearchView(
                 searchedLocation: $searchedLocation,
@@ -312,7 +315,7 @@ struct LocationRow: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(.gray)
+                    .foregroundColor(Color(hex: "B8BCC8"))
                     .frame(width: 24)
                 
                 Text(location)
@@ -325,7 +328,7 @@ struct LocationRow: View {
                     Button(action: {}) {
                         Image(systemName: "heart")
                             .font(.title3)
-                            .foregroundColor(.gray)
+                            .foregroundColor(Color(hex: "B8BCC8"))
                     }
                 }
             }

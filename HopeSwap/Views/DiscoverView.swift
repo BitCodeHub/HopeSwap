@@ -412,7 +412,7 @@ struct DiscoverView: View {
             )
             .presentationDetents([.medium]) // Show as half page from bottom
             .presentationDragIndicator(.visible)
-            .presentationBackground(.black.opacity(0.95))
+            .presentationBackground(Color(hex: "0A1929"))
         }
         .sheet(isPresented: $showCategorySelection) {
             CategorySelectionView(selectedCategory: $selectedCategory)

@@ -46,7 +46,7 @@ struct LocationSearchView: View {
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundColor(.hopeTextPrimary)
                                 .frame(width: 44, height: 44)
                         }
                         
@@ -69,13 +69,13 @@ struct LocationSearchView: View {
                     // Search bar
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.hopeTextSecondary)
                             .font(.body)
                         
                         TextField("", text: $searchText)
                             .placeholder(when: searchText.isEmpty) {
                                 Text("Search by city, neighborhood or ZIP code")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.hopeTextSecondary)
                                     .font(.subheadline)
                             }
                             .foregroundColor(.white)
@@ -95,7 +95,7 @@ struct LocationSearchView: View {
                                 showSearchResults = false
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.hopeTextSecondary)
                                     .font(.body)
                             }
                         }
@@ -104,12 +104,12 @@ struct LocationSearchView: View {
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 25)
-                            .fill(Color.white.opacity(0.15))
+                            .fill(Color.hopeDarkSecondary)
                     )
                     .padding(.horizontal)
                     .padding(.vertical, 16)
                 }
-                .background(Color.black.opacity(0.8))
+                .background(Color.hopeDarkBg)
                 
                 // Search results dropdown
                 if showSearchResults && !searchCompleter.results.isEmpty {
@@ -121,17 +121,17 @@ struct LocationSearchView: View {
                                 }) {
                                     HStack {
                                         Image(systemName: "mappin")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(.hopeTextSecondary)
                                             .font(.body)
                                         
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(result.title)
-                                                .foregroundColor(.white)
+                                                .foregroundColor(.hopeTextPrimary)
                                                 .font(.body)
                                             
                                             if !result.subtitle.isEmpty {
                                                 Text(result.subtitle)
-                                                    .foregroundColor(.gray)
+                                                    .foregroundColor(.hopeTextSecondary)
                                                     .font(.caption)
                                             }
                                         }
@@ -169,11 +169,11 @@ struct LocationSearchView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Suggested local radius")
                                         .font(.headline)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.hopeTextPrimary)
                                     
                                     Text("Show me listings from this general area.")
                                         .font(.subheadline)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.hopeTextSecondary)
                                 }
                                 
                                 Spacer()
@@ -193,11 +193,11 @@ struct LocationSearchView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Custom local radius")
                                             .font(.headline)
-                                            .foregroundColor(.white)
+                                            .foregroundColor(.hopeTextPrimary)
                                         
                                         Text("Only show me listings within a specific distance.")
                                             .font(.subheadline)
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(.hopeTextSecondary)
                                     }
                                     
                                     Spacer()
@@ -465,8 +465,8 @@ struct MapWithCircleOverlay: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let circle = overlay as? MKCircle {
                 let renderer = MKCircleRenderer(circle: circle)
-                renderer.fillColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 0.2) // Blue with opacity
-                renderer.strokeColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 0.5)
+                renderer.fillColor = UIColor(Color.hopeBlue.opacity(0.2))
+                renderer.strokeColor = UIColor(Color.hopeBlue.opacity(0.5))
                 renderer.lineWidth = 2
                 return renderer
             }
