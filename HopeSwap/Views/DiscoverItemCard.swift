@@ -60,37 +60,28 @@ struct DiscoverItemCard: View {
                         }
                     }
                     .clipped()
-                    
-                    // Price overlay at bottom left
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Text(priceText)
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.black.opacity(0.7))
-                                )
-                            Spacer()
-                        }
-                        .padding(12)
-                    }
                 }
             }
             .aspectRatio(1, contentMode: .fit)
             .clipped()
             .cornerRadius(12)
             
-            // Title below image
-            Text(item.title)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Price and title below image
+            HStack(spacing: 0) {
+                Text(priceText)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Text(" - ")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+                
+                Text(item.title)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

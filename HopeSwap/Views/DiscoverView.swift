@@ -24,6 +24,7 @@ struct DiscoverView: View {
     @State private var selectedCategoryTitle = ""
     @State private var selectedListingTypes: [ListingType]? = nil
     @State private var filterByJustListed = false
+    @State private var searchRadius: Double = 15
     
     let tabs = ["Sell", "For you", "Local", "More"]
     
@@ -142,11 +143,12 @@ struct DiscoverView: View {
                                 Spacer()
                                 
                                 Button(action: { showLocationPicker = true }) {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: 6) {
                                         Image(systemName: "location.fill")
-                                            .font(.caption)
+                                            .font(.system(size: 14))
                                         Text(locationManager.locationString)
                                             .font(.subheadline)
+                                            .fontWeight(.medium)
                                     }
                                     .foregroundColor(Color.hopeOrange)
                                 }
@@ -359,30 +361,21 @@ struct DiscoverView: View {
             }
             .navigationBarHidden(true)
             .onAppear {
-                // Always request current location
-                locationManager.requestLocation()
+                // Initialize filteredItems with all items first
+                filteredItems = dataManager.items
                 
-                // Check if there's a saved zip code
+                // Check saved location preferences
                 if let savedZip = UserDefaults.standard.string(forKey: "lastSearchedZipCode"),
                    let savedCity = UserDefaults.standard.string(forKey: "lastSearchedCity") {
                     zipCode = savedZip
                     searchedLocation = savedCity
                     locationManager.locationString = savedCity
                     locationManager.isUsingCurrentLocation = false
-                    filterItemsByLocation(savedCity)
-                } else {
-                    // Initialize filteredItems with all items if no saved location
-                    filteredItems = dataManager.items
                 }
                 
-                // Show tutorial only once per app install
-                let hasShownTutorial = UserDefaults.standard.bool(forKey: "hasShownPullToRefreshTutorial")
-                if !hasShownTutorial {
-                    showRefreshTutorial = true
-                    // Delay to ensure view is fully loaded
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        startTutorialAnimation()
-                    }
+                // Request location after a small delay to avoid blocking
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    locationManager.requestLocation()
                 }
             }
             .onChange(of: dataManager.items) { _, _ in
@@ -398,6 +391,7 @@ struct DiscoverView: View {
                 currentUserLocation: locationManager.currentUserLocation,
                 searchedLocation: $searchedLocation,
                 isUsingCurrentLocation: $locationManager.isUsingCurrentLocation,
+                searchRadius: $searchRadius,
                 onLocationUpdate: { zip in
                     if !zip.isEmpty {
                         updateLocationFromZipCode(zip)
@@ -416,6 +410,9 @@ struct DiscoverView: View {
                     switchToCurrentLocation()
                 }
             )
+            .presentationDetents([.medium]) // Show as half page from bottom
+            .presentationDragIndicator(.visible)
+            .presentationBackground(.black.opacity(0.95))
         }
         .sheet(isPresented: $showCategorySelection) {
             CategorySelectionView(selectedCategory: $selectedCategory)
@@ -515,6 +512,10 @@ struct DiscoverView: View {
                     item.location.lowercased().contains(cityName.lowercased())
                 }
             }
+            
+            // Note: For a production app, you would also filter by radius here
+            // using geocoding and distance calculations. For now, we're just
+            // filtering by city name match.
         }
         
         // Filter by category if one is selected

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var dataManager: DataManager
     @State private var selectedTab = 0
     @State private var showingPostOptions = false
     @State private var selectedPostType: PostType? = nil
@@ -92,14 +93,12 @@ struct ContentView: View {
                     .tag(5)
             }
             .accentColor(Color.hopeOrange)
-            .onChange(of: selectedTab) { _, newValue in
+            .onChange(of: selectedTab) { oldValue, newValue in
                 if newValue == 2 {
                     // Show post options when Post tab is selected
                     showingPostOptions = true
-                    // Reset to previous tab to prevent showing the placeholder
-                    DispatchQueue.main.async {
-                        selectedTab = 0
-                    }
+                    // Reset to discover tab
+                    selectedTab = 0
                 }
             }
         }

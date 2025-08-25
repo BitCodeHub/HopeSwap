@@ -5,15 +5,19 @@ class DataManager: ObservableObject {
     @Published var items: [Item] = []
     @Published var favorites: Set<UUID> = []
     @Published var currentUser: User
+    @Published var isDataLoaded = false
     
     static let shared = DataManager()
     
-    init() {
+    private init() {
         self.currentUser = User(username: "JohnDoe", email: "john@example.com")
-        loadSampleData()
+        // Don't load sample data in init to avoid initialization issues
     }
     
     func loadSampleData() {
+        // Prevent loading data multiple times
+        guard !isDataLoaded else { return }
+        
         // Create items with various post times for "Just listed" badges
         let now = Date()
         items = [
@@ -180,6 +184,11 @@ class DataManager: ObservableObject {
             if nearbyCities.contains(where: { items[index].location.contains($0) }) {
                 items[index].isNearby = true
             }
+        }
+        
+        // Update UI on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.isDataLoaded = true
         }
     }
     

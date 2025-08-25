@@ -19,10 +19,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         // Check current authorization status
         authorizationStatus = locationManager.authorizationStatus
         
-        // Request location if already authorized
-        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
-            locationManager.requestLocation()
-        }
+        // Don't request location in init to avoid blocking
     }
     
     func requestLocation() {

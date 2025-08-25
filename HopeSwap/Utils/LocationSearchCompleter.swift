@@ -10,11 +10,24 @@ class LocationSearchCompleter: NSObject, ObservableObject {
         didSet {
             if searchQuery.isEmpty {
                 delegate?.didUpdateResults([])
+                results = []
             } else {
                 completer.queryFragment = searchQuery
             }
         }
     }
+    
+    @Published var searchText = "" {
+        didSet {
+            if searchText.isEmpty {
+                results = []
+            } else {
+                completer.queryFragment = searchText
+            }
+        }
+    }
+    
+    @Published var results: [MKLocalSearchCompletion] = []
     
     override init() {
         super.init()
@@ -28,11 +41,13 @@ class LocationSearchCompleter: NSObject, ObservableObject {
 extension LocationSearchCompleter: MKLocalSearchCompleterDelegate {
     func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         delegate?.didUpdateResults(completer.results)
+        results = completer.results
     }
     
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
         print("Location search error: \(error)")
         delegate?.didUpdateResults([])
+        results = []
     }
 }
 
