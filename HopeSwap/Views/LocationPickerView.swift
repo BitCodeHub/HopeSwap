@@ -16,6 +16,12 @@ struct LocationPickerView: View {
         center: CLLocationCoordinate2D(latitude: 33.7501, longitude: -117.8356), // Westminster, CA default
         span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
     )
+    @State private var cameraPosition = MapCameraPosition.region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 33.7501, longitude: -117.8356),
+            span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+        )
+    )
     @State private var currentLocationName = ""
     @State private var recentLocations: [String] = []
     @State private var suggestedLocations = ["Los Angeles, California", "Amarillo, Texas"]
@@ -28,7 +34,7 @@ struct LocationPickerView: View {
         ZStack {
             // Gradient background for better visual in sheet
             LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "0A1929"), Color(hex: "1C2B3B")]),
+                gradient: Gradient(colors: [Color.hopeDarkBg, Color.hopeDarkSecondary]),
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -40,7 +46,7 @@ struct LocationPickerView: View {
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundColor(.hopeTextPrimary)
                                 .frame(width: 44, height: 44)
                         }
                         
@@ -49,7 +55,7 @@ struct LocationPickerView: View {
                         Text("Choose a location")
                             .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(.hopeTextPrimary)
                         
                         Spacer()
                         
@@ -58,7 +64,7 @@ struct LocationPickerView: View {
                         }) {
                             Image(systemName: "magnifyingglass")
                                 .font(.title2)
-                                .foregroundColor(.white)
+                                .foregroundColor(.hopeTextPrimary)
                                 .frame(width: 44, height: 44)
                         }
                     }
@@ -74,14 +80,16 @@ struct LocationPickerView: View {
                             }) {
                                 ZStack {
                                     // Simple map using Map from MapKit
-                                    Map(coordinateRegion: $mapRegion)
-                                        .frame(height: 140)
-                                        .disabled(true)
+                                    Map(position: $cameraPosition) {
+                                        // Empty map content - just showing the location area
+                                    }
+                                    .frame(height: 140)
+                                    .disabled(true)
                                     
                                     // Blue circle overlay to show radius
                                     Circle()
-                                        .fill(Color(hex: "4285F4").opacity(0.2))
-                                        .stroke(Color(hex: "4285F4").opacity(0.5), lineWidth: 2)
+                                        .fill(Color.hopeBlue.opacity(0.2))
+                                        .stroke(Color.hopeBlue.opacity(0.5), lineWidth: 2)
                                         .frame(width: 120, height: 120)
                                 }
                             }
@@ -92,11 +100,11 @@ struct LocationPickerView: View {
                                 Text(currentLocationName)
                                     .font(.title2)
                                     .fontWeight(.semibold)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.hopeTextPrimary)
                                 
                                 Text(searchRadius > 0 && searchRadius < 15 ? "\(Int(searchRadius)) mile radius" : searchRadius == 15 ? "Suggested radius" : "\(Int(searchRadius)) mile radius")
                                     .font(.subheadline)
-                                    .foregroundColor(Color(hex: "B8BCC8"))
+                                    .foregroundColor(.hopeTextSecondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal)
@@ -114,10 +122,10 @@ struct LocationPickerView: View {
                                         .font(.headline)
                                         .fontWeight(.semibold)
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(.hopeTextPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color(hex: "4285F4"))
+                                .background(Color.hopeBlue)
                                 .cornerRadius(10)
                             }
                             .padding(.horizontal)
@@ -129,14 +137,14 @@ struct LocationPickerView: View {
                                     Text("Recent locations")
                                         .font(.title3)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.white)
+                                        .foregroundColor(.hopeTextPrimary)
                                     
                                     Spacer()
                                     
                                     Button(action: {}) {
                                         Text("See all")
                                             .font(.subheadline)
-                                            .foregroundColor(Color(hex: "4285F4"))
+                                            .foregroundColor(Color.hopeBlue)
                                     }
                                 }
                                 .padding(.horizontal)
@@ -159,7 +167,7 @@ struct LocationPickerView: View {
                                 Text("Suggested for you")
                                     .font(.title3)
                                     .fontWeight(.semibold)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.hopeTextPrimary)
                                     .padding(.horizontal)
                                 
                                 // Grid layout for suggested locations
@@ -171,11 +179,11 @@ struct LocationPickerView: View {
                                             HStack(spacing: 8) {
                                                 Image(systemName: "mappin")
                                                     .font(.caption)
-                                                    .foregroundColor(Color(hex: "B8BCC8"))
+                                                    .foregroundColor(.hopeTextSecondary)
                                                 
                                                 Text(location)
                                                     .font(.subheadline)
-                                                    .foregroundColor(.white)
+                                                    .foregroundColor(.hopeTextPrimary)
                                                     .lineLimit(1)
                                                 
                                                 Spacer()
@@ -240,11 +248,13 @@ struct LocationPickerView: View {
         geocoder.geocodeAddressString(locationName) { placemarks, error in
             if let placemark = placemarks?.first,
                let location = placemark.location {
+                let newRegion = MKCoordinateRegion(
+                    center: location.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                )
                 withAnimation {
-                    mapRegion = MKCoordinateRegion(
-                        center: location.coordinate,
-                        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                    )
+                    mapRegion = newRegion
+                    cameraPosition = MapCameraPosition.region(newRegion)
                 }
             }
         }
@@ -258,11 +268,13 @@ struct LocationPickerView: View {
                    let city = placemark.locality,
                    let state = placemark.administrativeArea {
                     currentLocationName = "\(city), \(state)"
+                    let newRegion = MKCoordinateRegion(
+                        center: location.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                    )
                     withAnimation {
-                        mapRegion = MKCoordinateRegion(
-                            center: location.coordinate,
-                            span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
-                        )
+                        mapRegion = newRegion
+                        cameraPosition = MapCameraPosition.region(newRegion)
                     }
                     selectLocation(currentLocationName)
                 }
@@ -315,12 +327,12 @@ struct LocationRow: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(Color(hex: "B8BCC8"))
+                    .foregroundColor(.hopeTextSecondary)
                     .frame(width: 24)
                 
                 Text(location)
                     .font(.body)
-                    .foregroundColor(.white)
+                    .foregroundColor(.hopeTextPrimary)
                 
                 Spacer()
                 
@@ -328,7 +340,7 @@ struct LocationRow: View {
                     Button(action: {}) {
                         Image(systemName: "heart")
                             .font(.title3)
-                            .foregroundColor(Color(hex: "B8BCC8"))
+                            .foregroundColor(.hopeTextSecondary)
                     }
                 }
             }

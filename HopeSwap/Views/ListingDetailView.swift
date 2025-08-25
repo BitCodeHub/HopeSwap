@@ -1,5 +1,14 @@
 import SwiftUI
 
+struct PressedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
 struct ListingDetailView: View {
     let item: Item
     @Environment(\.dismiss) var dismiss
@@ -201,29 +210,100 @@ struct ListingDetailView: View {
                             .background(Color.black.opacity(0.2))
                             .padding(.top, 12)
                             
-                            // Action buttons
-                            HStack(spacing: 0) {
-                                ForEach([
-                                    ("bell", "Alerts"),
-                                    ("person.2", "Send offer"),
-                                    ("square.and.arrow.up", "Share"),
-                                    ("bookmark", "Save")
-                                ], id: \.0) { icon, title in
+                            // Action buttons - Redesigned with HopeSwap theme
+                            VStack(spacing: 16) {
+                                // Primary action buttons
+                                HStack(spacing: 12) {
+                                    // Send offer - Primary button
                                     Button(action: {}) {
-                                        VStack(spacing: 8) {
-                                            Image(systemName: icon)
-                                                .font(.title2)
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "person.2.fill")
+                                                .font(.title3)
                                                 .foregroundColor(.white)
-                                            Text(title)
-                                                .font(.caption)
+                                            Text("Send offer")
+                                                .font(.headline)
+                                                .fontWeight(.semibold)
                                                 .foregroundColor(.white)
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 16)
+                                        .background(Color.hopeBlue)
+                                        .cornerRadius(12)
+                                        .shadow(color: Color.hopeBlue.opacity(0.3), radius: 8, x: 0, y: 4)
                                     }
+                                    .buttonStyle(PressedButtonStyle())
+                                    
+                                    // Alerts - Secondary accent button
+                                    Button(action: {}) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "bell.fill")
+                                                .font(.title3)
+                                                .foregroundColor(.hopeBlue)
+                                            Text("Alerts")
+                                                .font(.headline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.hopeBlue)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 16)
+                                        .background(Color.hopeBlue.opacity(0.15))
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Color.hopeBlue.opacity(0.3), lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(PressedButtonStyle())
+                                }
+                                
+                                // Secondary action buttons
+                                HStack(spacing: 12) {
+                                    Button(action: {}) {
+                                        VStack(spacing: 6) {
+                                            Image(systemName: "square.and.arrow.up")
+                                                .font(.title2)
+                                                .foregroundColor(.hopeTextPrimary)
+                                            Text("Share")
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.hopeTextPrimary)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(Color.hopeDarkSecondary)
+                                        .cornerRadius(10)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.hopeTextSecondary.opacity(0.2), lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(PressedButtonStyle())
+                                    
+                                    Button(action: {}) {
+                                        VStack(spacing: 6) {
+                                            Image(systemName: "bookmark")
+                                                .font(.title2)
+                                                .foregroundColor(.hopeTextPrimary)
+                                            Text("Save")
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.hopeTextPrimary)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(Color.hopeDarkSecondary)
+                                        .cornerRadius(10)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(Color.hopeTextSecondary.opacity(0.2), lineWidth: 1)
+                                        )
+                                    }
+                                    .buttonStyle(PressedButtonStyle())
                                 }
                             }
-                            .background(Color.black.opacity(0.2))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 20)
+                            .background(Color.hopeDarkBg)
                             
                             // Description section
                             VStack(alignment: .leading, spacing: 12) {
