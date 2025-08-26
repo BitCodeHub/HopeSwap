@@ -177,6 +177,41 @@ class DataManager: ObservableObject {
         }
     }
     
+    // Create a test item owned by current user (for testing edit/delete functionality)
+    func createTestOwnedItem() async {
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else {
+            print("❌ Cannot create test item: No authenticated user")
+            return
+        }
+        
+        let testItem = Item(
+            title: "Test Nintendo Switch - Animal Crossing Edition",
+            description: "This is a test item to demonstrate edit/delete functionality. Special Edition console with custom design.",
+            category: .electronics,
+            condition: .likeNew,
+            userId: UUID(),
+            firebaseUserId: currentUserId, // Set current user as owner
+            location: "Garden Grove",
+            postedDate: Date(),
+            price: 299.99,
+            priceIsFirm: false,
+            isTradeItem: false,
+            listingType: .sell,
+            sellerUsername: currentUser.username,
+            sellerProfileImageURL: currentUser.profileImageURL
+        )
+        
+        // Add test images
+        var itemWithImages = testItem
+        itemWithImages.images = [
+            "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400", // Nintendo Switch image
+            "https://images.unsplash.com/photo-1585857189141-003ab7bbbe10?w=400"
+        ]
+        
+        print("🧪 Creating test item owned by current user: \(currentUserId)")
+        await addItem(itemWithImages)
+    }
+    
     // Load sample data locally (fallback)
     private func loadSampleDataLocally() {
         // Prevent loading data multiple times
@@ -519,21 +554,27 @@ class DataManager: ObservableObject {
         }
         
         do {
-            // Delete from Firestore (use the document ID if available)
-            // Note: You might need to store the Firestore document ID in your Item model
+            // Delete from Firestore using the item's UUID as document ID
+            print("🗑️ Deleting item: \(item.title)")
+            try await firestoreManager.deleteItem(itemId: item.id.uuidString)
+            print("✅ Item deleted from Firestore successfully")
             
             // Delete images from Storage
             if !item.images.isEmpty {
+                print("🗑️ Deleting \(item.images.count) images from storage...")
                 await storageManager.deleteImages(urls: item.images)
+                print("✅ Images deleted successfully")
             }
             
             // Remove from local state (real-time listener will handle this automatically)
             await MainActor.run {
                 items.removeAll { $0.id == item.id }
+                // Also remove from favorites if it was favorited
+                favorites.remove(item.id)
             }
             
         } catch {
-            print("Error deleting item: \(error)")
+            print("❌ Error deleting item: \(error)")
             await MainActor.run {
                 errorMessage = error.localizedDescription
             }

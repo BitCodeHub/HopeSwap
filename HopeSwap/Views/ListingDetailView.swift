@@ -25,7 +25,9 @@ struct ListingDetailView: View {
     @State private var showingEditFlow = false
     
     var isOwnItem: Bool {
-        guard let currentUserId = AuthenticationManager.shared.currentUserId else { return false }
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else { 
+            return false 
+        }
         return item.firebaseUserId == currentUserId || item.userId.uuidString == currentUserId
     }
     
@@ -587,9 +589,24 @@ struct ListingDetailView: View {
     func deleteItem() {
         isDeleting = true
         Task {
-            await dataManager.deleteItem(item)
-            await MainActor.run {
-                dismiss()
+            do {
+                // In DEBUG mode, allow deletion of any item for testing
+                #if DEBUG
+                print("🗑️ DEBUG: Deleting item (testing mode)")
+                await dataManager.removeItem(item)
+                #else
+                // In production, use proper deletion with ownership checks
+                await dataManager.deleteItem(item)
+                #endif
+                
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                print("❌ Error deleting item: \(error)")
+                await MainActor.run {
+                    isDeleting = false
+                }
             }
         }
     }

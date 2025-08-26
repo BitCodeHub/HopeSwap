@@ -22,6 +22,41 @@ struct ListingMenuSheet: View {
                 
                 // Menu options
                 VStack(spacing: 0) {
+                    // TEMPORARY: Show edit/delete for all items during testing
+                    // TODO: Change back to if isOwnItem { for production
+                    #if DEBUG
+                    // In debug mode, always show edit/delete options for testing
+                    MenuOption(
+                        icon: "pencil",
+                        title: "Edit listing",
+                        action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showingEditFlow = true
+                            }
+                        }
+                    )
+                    
+                    Divider()
+                        .background(Color.gray.opacity(0.2))
+                    
+                    MenuOption(
+                        icon: "trash",
+                        title: "Delete listing",
+                        textColor: .red,
+                        iconColor: .red,
+                        action: {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showingDeleteAlert = true
+                            }
+                        }
+                    )
+                    
+                    Divider()
+                        .background(Color.gray.opacity(0.2))
+                    #else
+                    // In release mode, only show for owned items
                     if isOwnItem {
                         MenuOption(
                             icon: "pencil",
@@ -53,6 +88,7 @@ struct ListingMenuSheet: View {
                         Divider()
                             .background(Color.gray.opacity(0.2))
                     }
+                    #endif
                     
                     MenuOption(
                         icon: "chart.bar",
@@ -65,6 +101,8 @@ struct ListingMenuSheet: View {
                         }
                     )
                     
+                    #if !DEBUG
+                    // Only show Share and Report in release mode
                     Divider()
                         .background(Color.gray.opacity(0.2))
                     
@@ -92,6 +130,7 @@ struct ListingMenuSheet: View {
                             }
                         )
                     }
+                    #endif
                 }
                 .padding(.vertical, 20)
                 
