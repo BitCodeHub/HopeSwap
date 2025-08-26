@@ -19,6 +19,10 @@ struct ListingDetailView: View {
     @State private var messageText = "Is this still available?"
     @State private var showingDeleteAlert = false
     @State private var isDeleting = false
+    @State private var showingMenu = false
+    @State private var showingSearch = false
+    @State private var showingInsights = false
+    @State private var showingEditFlow = false
     
     var isOwnItem: Bool {
         guard let currentUserId = AuthenticationManager.shared.currentUserId else { return false }
@@ -69,27 +73,16 @@ struct ListingDetailView: View {
                     Spacer()
                     
                     HStack(spacing: 20) {
-                        if isOwnItem {
-                            Button(action: {
-                                showingDeleteAlert = true
-                            }) {
-                                Image(systemName: "trash")
-                                    .font(.title2)
-                                    .foregroundColor(.red)
-                            }
-                            .disabled(isDeleting)
-                        } else {
-                            Button(action: {}) {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.title2)
-                                    .foregroundColor(.white)
-                            }
-                            
-                            Button(action: {}) {
-                                Image(systemName: "ellipsis")
-                                    .font(.title2)
-                                    .foregroundColor(.white)
-                            }
+                        Button(action: { showingSearch = true }) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                        }
+                        
+                        Button(action: { showingMenu = true }) {
+                            Image(systemName: "ellipsis")
+                                .font(.title2)
+                                .foregroundColor(.white)
                         }
                     }
                 }
@@ -565,6 +558,29 @@ struct ListingDetailView: View {
             }
         } message: {
             Text("Are you sure you want to delete this listing? This action cannot be undone.")
+        }
+        .sheet(isPresented: $showingMenu) {
+            ListingMenuSheet(
+                item: item,
+                isOwnItem: isOwnItem,
+                showingEditFlow: $showingEditFlow,
+                showingDeleteAlert: $showingDeleteAlert,
+                showingInsights: $showingInsights
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(Color.hopeDarkSecondary)
+        }
+        .sheet(isPresented: $showingSearch) {
+            ListingSearchView()
+                .environmentObject(dataManager)
+        }
+        .sheet(isPresented: $showingInsights) {
+            MarketplaceInsightsView(item: item)
+        }
+        .fullScreenCover(isPresented: $showingEditFlow) {
+            PostItemFlow(editingItem: item)
+                .environmentObject(dataManager)
         }
     }
     

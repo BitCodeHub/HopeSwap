@@ -447,6 +447,70 @@ class DataManager: ObservableObject {
         }
     }
     
+    // Update existing item
+    func updateItem(_ item: Item, newImages: [UIImage] = []) async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = ""
+        }
+        
+        do {
+            var updatedItem = item
+            
+            // Set the Firebase user ID if not already set
+            if updatedItem.firebaseUserId == nil {
+                if let firebaseUserId = AuthenticationManager.shared.currentUserId {
+                    updatedItem.firebaseUserId = firebaseUserId
+                }
+            }
+            
+            // Update seller information from current user
+            updatedItem.sellerUsername = currentUser.username
+            updatedItem.sellerProfileImageURL = currentUser.profileImageURL
+            
+            // Update isNearby flag based on location
+            let nearbyCities = ["Garden Grove", "Westminster", "Anaheim", "Santa Ana", "Fountain Valley", "Huntington Beach", "Costa Mesa", "Irvine"]
+            updatedItem.isNearby = nearbyCities.contains { city in
+                updatedItem.location.lowercased().contains(city.lowercased())
+            }
+            
+            print("🔵 Updating item: \(updatedItem.title)")
+            print("🔵 Item ID: \(updatedItem.id)")
+            
+            // Upload new images if provided
+            if !newImages.isEmpty {
+                print("🔵 Uploading \(newImages.count) new images...")
+                let itemId = updatedItem.id.uuidString
+                let optimizedImages = newImages.map { storageManager.optimizeImageForUpload($0) }
+                let imageUrls = try await storageManager.uploadItemImages(optimizedImages, itemId: itemId)
+                updatedItem.images = imageUrls
+                print("🔵 Images uploaded successfully: \(imageUrls)")
+            }
+            
+            // Update item in Firestore
+            print("🔵 Updating item in Firestore...")
+            try await firestoreManager.updateItem(updatedItem)
+            print("✅ Item updated successfully")
+            
+            // Update local state immediately
+            await MainActor.run {
+                if let index = self.items.firstIndex(where: { $0.id == updatedItem.id }) {
+                    self.items[index] = updatedItem
+                }
+            }
+            
+        } catch {
+            print("❌ Error updating item: \(error)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+    
     // Delete item with Firebase integration
     func deleteItem(_ item: Item) async {
         await MainActor.run {

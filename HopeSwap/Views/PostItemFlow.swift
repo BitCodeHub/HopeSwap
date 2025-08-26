@@ -27,8 +27,15 @@ struct IndexedImage: Identifiable, Equatable, Codable, Transferable {
 
 struct PostItemFlow: View {
     @EnvironmentObject var dataManager: DataManager
-    @Binding var selectedTab: Int
-    let isTradeItem: Bool
+    var selectedTab: Binding<Int>?
+    var isTradeItem: Bool = false
+    var editingItem: Item? = nil
+    
+    init(selectedTab: Binding<Int>? = nil, isTradeItem: Bool = false, editingItem: Item? = nil) {
+        self.selectedTab = selectedTab
+        self.isTradeItem = isTradeItem
+        self.editingItem = editingItem
+    }
     
     @State private var currentStep = 1
     @State private var showingImagePicker = false
@@ -107,15 +114,17 @@ struct PostItemFlow: View {
         .sheet(isPresented: $showingCamera) {
             ImagePicker(images: $selectedImages, sourceType: .camera, maxCount: 10)
         }
-        .alert("Item Posted!", isPresented: $showingSuccessAlert) {
+        .alert(editingItem != nil ? "Item Updated!" : "Item Posted!", isPresented: $showingSuccessAlert) {
             Button("OK") {
                 dismiss()
             }
         } message: {
-            Text(isTradeItem ? 
-                "Your trade item has been listed successfully. Happy swapping!" :
-                (showListingFee ? 
-                    "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!" :
+            Text(editingItem != nil ?
+                "Your item has been updated successfully." :
+                (isTradeItem ? 
+                    "Your trade item has been listed successfully. Happy swapping!" :
+                    (showListingFee ? 
+                        "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!" :
                     (donationAmount > 0 ? 
                         "Your item has been listed successfully for free. Thank you for your $\(String(format: "%.0f", donationAmount)) donation to pediatric cancer research!" :
                         "Your item has been listed successfully for free.")))
@@ -125,16 +134,41 @@ struct PostItemFlow: View {
         } message: {
             Text("Please sign in with Google or Apple to post items. This helps keep our community safe.")
         }
+        .onAppear {
+            if let item = editingItem {
+                // Populate fields for editing
+                title = item.title
+                description = item.description
+                selectedCategory = item.category
+                selectedCondition = item.condition
+                location = item.location
+                
+                // Set price
+                if let itemPrice = item.price {
+                    price = String(format: "%.0f", itemPrice)
+                } else {
+                    price = ""
+                }
+                
+                // Set trade preferences
+                lookingFor = item.lookingFor ?? ""
+                acceptableItems = item.acceptableItems ?? ""
+                openToOffers = item.openToOffers
+                
+                // Note: For editing, we can't restore the original images from URLs
+                // The user will need to re-upload images if they want to change them
+            }
+        }
     }
     
     // MARK: - Header View
     var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(isTradeItem ? "Trade Item" : "Sell Item")
+                Text(editingItem != nil ? "Edit Item" : (isTradeItem ? "Trade Item" : "Sell Item"))
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(isTradeItem ? Color.hopeBlue : Color.hopeGreen)
+                    .foregroundColor(editingItem != nil ? Color.hopeOrange : (isTradeItem ? Color.hopeBlue : Color.hopeGreen))
                 
                 Text("Step \(currentStep) of 4")
                     .font(.subheadline)
@@ -177,9 +211,11 @@ struct PostItemFlow: View {
             Button(action: nextStep) {
                 HStack {
                     Text(currentStep == 4 ? 
-                        (isTradeItem ? "Post Trade" : 
-                            (showListingFee ? "Post Item ($1 fee)" : 
-                                (donationAmount > 0 ? "Donate $\(String(format: "%.0f", donationAmount)) & Post" : "Post for Free")
+                        (editingItem != nil ? "Update Item" :
+                            (isTradeItem ? "Post Trade" : 
+                                (showListingFee ? "Post Item ($1 fee)" : 
+                                    (donationAmount > 0 ? "Donate $\(String(format: "%.0f", donationAmount)) & Post" : "Post for Free")
+                                )
                             )
                         ) : "Next")
                     if currentStep < 4 {
@@ -307,29 +343,53 @@ struct PostItemFlow: View {
             return
         }
         
-        let userIdUUID = UUID(uuidString: currentUserId) ?? UUID()
-        
-        let newItem = Item(
-            title: title,
-            description: description,
-            category: selectedCategory,
-            condition: selectedCondition,
-            userId: userIdUUID,
-            location: location,
-            price: isTradeItem ? nil : Double(price),
-            priceIsFirm: priceIsFirm,
-            isTradeItem: isTradeItem,
-            lookingFor: isTradeItem ? lookingFor : nil,
-            acceptableItems: isTradeItem ? acceptableItems : nil,
-            tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
-            openToOffers: isTradeItem ? openToOffers : false,
-            images: [], // Empty initially, will be populated by Firebase
-            listingType: isTradeItem ? .trade : .sell
-        )
-        
-        Task {
-            await dataManager.addItem(newItem, images: selectedImages)
-            showingSuccessAlert = true
+        if let existingItem = editingItem {
+            // Update existing item
+            var updatedItem = existingItem
+            updatedItem.title = title
+            updatedItem.description = description
+            updatedItem.category = selectedCategory
+            updatedItem.condition = selectedCondition
+            updatedItem.location = location
+            updatedItem.price = isTradeItem ? nil : Double(price)
+            updatedItem.priceIsFirm = priceIsFirm
+            updatedItem.isTradeItem = isTradeItem
+            updatedItem.lookingFor = isTradeItem ? lookingFor : nil
+            updatedItem.acceptableItems = isTradeItem ? acceptableItems : nil
+            updatedItem.tradeSuggestions = isTradeItem ? tradeSuggestions : nil
+            updatedItem.openToOffers = isTradeItem ? openToOffers : false
+            updatedItem.listingType = isTradeItem ? .trade : .sell
+            
+            Task {
+                await dataManager.updateItem(updatedItem, newImages: selectedImages)
+                showingSuccessAlert = true
+            }
+        } else {
+            // Create new item
+            let userIdUUID = UUID(uuidString: currentUserId) ?? UUID()
+            
+            let newItem = Item(
+                title: title,
+                description: description,
+                category: selectedCategory,
+                condition: selectedCondition,
+                userId: userIdUUID,
+                location: location,
+                price: isTradeItem ? nil : Double(price),
+                priceIsFirm: priceIsFirm,
+                isTradeItem: isTradeItem,
+                lookingFor: isTradeItem ? lookingFor : nil,
+                acceptableItems: isTradeItem ? acceptableItems : nil,
+                tradeSuggestions: isTradeItem ? tradeSuggestions : nil,
+                openToOffers: isTradeItem ? openToOffers : false,
+                images: [], // Empty initially, will be populated by Firebase
+                listingType: isTradeItem ? .trade : .sell
+            )
+            
+            Task {
+                await dataManager.addItem(newItem, images: selectedImages)
+                showingSuccessAlert = true
+            }
         }
     }
 }
