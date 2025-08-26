@@ -647,22 +647,3 @@ struct TradePreferenceRow: View {
     }
 }
 
-struct Badge: View {
-    let text: String
-    let backgroundColor: Color
-    let textColor: Color
-    
-    var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(textColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(backgroundColor)
-            )
-            .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
-    }
-}
-
