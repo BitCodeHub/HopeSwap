@@ -127,7 +127,7 @@ struct PostItemFlow: View {
                         "Your item has been listed successfully. Thank you for your $1 donation to pediatric cancer research!" :
                     (donationAmount > 0 ? 
                         "Your item has been listed successfully for free. Thank you for your $\(String(format: "%.0f", donationAmount)) donation to pediatric cancer research!" :
-                        "Your item has been listed successfully for free.")))
+                        "Your item has been listed successfully for free."))))
         }
         .alert("Sign In Required", isPresented: $showingAuthAlert) {
             Button("OK") {}
