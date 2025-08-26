@@ -15,7 +15,7 @@ struct ListingDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedImageIndex = 0
-    @State private var showingAllImages = false
+    @State private var showingImageGallery = false
     @State private var messageText = "Is this still available?"
     @State private var showingDeleteAlert = false
     @State private var isDeleting = false
@@ -131,6 +131,10 @@ struct ListingDetailView: View {
                                                     }
                                                 }
                                             }
+                                            .contentShape(Rectangle()) // Make entire area tappable
+                                            .onTapGesture {
+                                                showingImageGallery = true
+                                            }
                                         }
                                         .tag(index)
                                     }
@@ -154,6 +158,20 @@ struct ListingDetailView: View {
                                             .fill(Color.black.opacity(0.3))
                                     )
                                     .padding(.bottom, 20)
+                                }
+                                
+                                // Zoom icon indicator (top right)
+                                VStack {
+                                    HStack {
+                                        Spacer()
+                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                            .font(.body)
+                                            .foregroundColor(.white)
+                                            .padding(8)
+                                            .background(Circle().fill(Color.black.opacity(0.5)))
+                                            .padding()
+                                    }
+                                    Spacer()
                                 }
                             } else {
                                 imagePlaceholder
@@ -511,6 +529,9 @@ struct ListingDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        .fullScreenCover(isPresented: $showingImageGallery) {
+            ImageGalleryView(images: item.images, selectedIndex: $selectedImageIndex)
+        }
         .alert("Delete Listing", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {

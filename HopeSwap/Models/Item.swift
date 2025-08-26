@@ -251,9 +251,9 @@ extension Item {
         let distance = data["distance"] as? Double
         
         // Parse userId from Firestore
-        let firebaseUserId = data["userId"] as? String
-        let legacyUserIdString = data["legacyUserId"] as? String ?? data["userId"] as? String ?? ""
-        let userId = UUID(uuidString: legacyUserIdString) ?? UUID()
+        let firebaseUserId = data["firebaseUserId"] as? String
+        let userIdString = data["userId"] as? String ?? ""
+        let userId = UUID(uuidString: userIdString) ?? UUID()
         
         // Parse seller information
         let sellerUsername = data["sellerUsername"] as? String
@@ -328,9 +328,9 @@ extension Item {
         let distance = data["distance"] as? Double
         
         // Parse userId from Firestore
-        let firebaseUserId = data["userId"] as? String
-        let legacyUserIdString = data["legacyUserId"] as? String ?? data["userId"] as? String ?? ""
-        let userId = UUID(uuidString: legacyUserIdString) ?? UUID()
+        let firebaseUserId = data["firebaseUserId"] as? String
+        let userIdString = data["userId"] as? String ?? ""
+        let userId = UUID(uuidString: userIdString) ?? UUID()
         
         // Parse seller information
         let sellerUsername = data["sellerUsername"] as? String

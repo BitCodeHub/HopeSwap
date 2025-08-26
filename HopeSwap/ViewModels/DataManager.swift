@@ -400,10 +400,17 @@ class DataManager: ObservableObject {
             newItem.sellerUsername = currentUser.username
             newItem.sellerProfileImageURL = currentUser.profileImageURL
             
+            // Set isNearby flag based on location
+            let nearbyCities = ["Garden Grove", "Westminster", "Anaheim", "Santa Ana", "Fountain Valley", "Huntington Beach", "Costa Mesa", "Irvine"]
+            newItem.isNearby = nearbyCities.contains { city in
+                newItem.location.lowercased().contains(city.lowercased())
+            }
+            
             print("🔵 Adding new item: \(newItem.title)")
             print("🔵 User ID (UUID): \(newItem.userId)")
             print("🔵 Firebase Auth UID: \(newItem.firebaseUserId ?? "nil")")
             print("🔵 Seller: \(newItem.sellerUsername ?? "Unknown")")
+            print("🔵 Location: \(newItem.location) - isNearby: \(newItem.isNearby)")
             
             // Upload images first if any
             if !images.isEmpty {

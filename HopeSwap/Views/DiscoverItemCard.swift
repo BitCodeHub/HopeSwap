@@ -60,6 +60,32 @@ struct DiscoverItemCard: View {
                         }
                     }
                     .clipped()
+                    
+                    // Badges overlay
+                    VStack {
+                        HStack(spacing: 6) {
+                            if item.isNearby {
+                                Badge(
+                                    text: "Nearby",
+                                    backgroundColor: Color.hopeGreen,
+                                    textColor: .white
+                                )
+                            }
+                            
+                            if item.isJustListed {
+                                Badge(
+                                    text: "Just listed",
+                                    backgroundColor: Color.hopeOrange,
+                                    textColor: .white
+                                )
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(8)
+                        
+                        Spacer()
+                    }
                 }
             }
             .aspectRatio(1, contentMode: .fit)
@@ -106,15 +132,15 @@ struct Badge: View {
     let textColor: Color
     
     var body: some View {
-        Text(text)
-            .font(.caption2)
-            .fontWeight(.medium)
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
             .foregroundColor(textColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 3)
+                RoundedRectangle(cornerRadius: 4)
                     .fill(backgroundColor)
             )
+            .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
     }
 }
