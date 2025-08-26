@@ -160,10 +160,33 @@ struct ListingDetailView: View {
                                     .padding(.bottom, 20)
                                 }
                                 
-                                // Zoom icon indicator (top right)
+                                // Overlay elements
                                 VStack {
                                     HStack {
+                                        // Badges on the left
+                                        HStack(spacing: 6) {
+                                            if item.isNearby {
+                                                Badge(
+                                                    text: "Nearby",
+                                                    backgroundColor: Color.hopeGreen,
+                                                    textColor: .white
+                                                )
+                                            }
+                                            
+                                            if item.isJustListed {
+                                                Badge(
+                                                    text: "Just listed",
+                                                    backgroundColor: Color.hopeOrange,
+                                                    textColor: .white
+                                                )
+                                            }
+                                        }
+                                        .padding(.leading, 12)
+                                        .padding(.top, 12)
+                                        
                                         Spacer()
+                                        
+                                        // Zoom icon indicator (top right)
                                         Image(systemName: "arrow.up.left.and.arrow.down.right")
                                             .font(.body)
                                             .foregroundColor(.white)
@@ -171,6 +194,7 @@ struct ListingDetailView: View {
                                             .background(Circle().fill(Color.black.opacity(0.5)))
                                             .padding()
                                     }
+                                    
                                     Spacer()
                                 }
                             } else {
@@ -620,6 +644,25 @@ struct TradePreferenceRow: View {
             
             Spacer()
         }
+    }
+}
+
+struct Badge: View {
+    let text: String
+    let backgroundColor: Color
+    let textColor: Color
+    
+    var body: some View {
+        Text(text.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(textColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(backgroundColor)
+            )
+            .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
     }
 }
 
