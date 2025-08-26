@@ -489,7 +489,7 @@ class DataManager: ObservableObject {
             
             // Update item in Firestore
             print("🔵 Updating item in Firestore...")
-            try await firestoreManager.updateItem(updatedItem)
+            try await firestoreManager.updateItem(itemId: updatedItem.id.uuidString, data: updatedItem.toDictionary())
             print("✅ Item updated successfully")
             
             // Update local state immediately
