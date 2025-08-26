@@ -2,16 +2,40 @@ import SwiftUI
 
 struct ProfileView: View {
     @EnvironmentObject var dataManager: DataManager
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingDonationHistory = false
+    @State private var showingSignOutAlert = false
+    @State private var showingMyListings = false
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(spacing: 15) {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 100))
-                            .foregroundColor(Color.hopeOrange)
+                        if let profileImageURL = dataManager.currentUser.profileImageURL,
+                           let url = URL(string: profileImageURL) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(Circle())
+                                case .failure(_), .empty:
+                                    Image(systemName: "person.circle.fill")
+                                        .font(.system(size: 100))
+                                        .foregroundColor(Color.hopeOrange)
+                                @unknown default:
+                                    ProgressView()
+                                        .frame(width: 100, height: 100)
+                                }
+                            }
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 100))
+                                .foregroundColor(Color.hopeOrange)
+                        }
                         
                         Text(dataManager.currentUser.username)
                             .font(.title)
@@ -37,7 +61,9 @@ struct ProfileView: View {
                     .padding(.horizontal)
                     
                     VStack(spacing: 0) {
-                        MenuRow(title: "My Listings", icon: "square.grid.2x2", action: {})
+                        MenuRow(title: "My Listings", icon: "square.grid.2x2", action: {
+                            showingMyListings = true
+                        })
                         MenuRow(title: "Trade History", icon: "clock.arrow.circlepath", action: {})
                         MenuRow(title: "Donation History", icon: "heart.text.square", action: {
                             showingDonationHistory = true
@@ -51,7 +77,9 @@ struct ProfileView: View {
                     .padding(.horizontal)
                     .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
                     
-                    Button(action: {}) {
+                    Button(action: {
+                        showingSignOutAlert = true
+                    }) {
                         Text("Sign Out")
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -68,6 +96,22 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingDonationHistory) {
                 DonationHistoryView()
+            }
+            .sheet(isPresented: $showingMyListings) {
+                MyListingsView()
+                    .environmentObject(dataManager)
+            }
+            .alert("Sign Out", isPresented: $showingSignOutAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Sign Out", role: .destructive) {
+                    do {
+                        try authManager.signOut()
+                    } catch {
+                        print("Error signing out: \(error)")
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
             }
         }
     }

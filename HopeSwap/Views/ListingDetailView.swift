@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct PressedButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -16,6 +17,13 @@ struct ListingDetailView: View {
     @State private var selectedImageIndex = 0
     @State private var showingAllImages = false
     @State private var messageText = "Is this still available?"
+    @State private var showingDeleteAlert = false
+    @State private var isDeleting = false
+    
+    var isOwnItem: Bool {
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else { return false }
+        return item.firebaseUserId == currentUserId || item.userId.uuidString == currentUserId
+    }
     
     var priceText: String {
         if let price = item.price {
@@ -61,16 +69,27 @@ struct ListingDetailView: View {
                     Spacer()
                     
                     HStack(spacing: 20) {
-                        Button(action: {}) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                        }
-                        
-                        Button(action: {}) {
-                            Image(systemName: "ellipsis")
-                                .font(.title2)
-                                .foregroundColor(.white)
+                        if isOwnItem {
+                            Button(action: {
+                                showingDeleteAlert = true
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.title2)
+                                    .foregroundColor(.red)
+                            }
+                            .disabled(isDeleting)
+                        } else {
+                            Button(action: {}) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                            }
+                            
+                            Button(action: {}) {
+                                Image(systemName: "ellipsis")
+                                    .font(.title2)
+                                    .foregroundColor(.white)
+                            }
                         }
                     }
                 }
@@ -170,50 +189,116 @@ struct ListingDetailView: View {
                                 .padding(.horizontal)
                             }
                             
-                            // Message seller section
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "message.fill")
-                                        .font(.body)
-                                        .foregroundColor(Color.hopeBlue)
-                                    
-                                    Text("Send seller a message")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
+                            // Seller information section
+                            HStack(spacing: 12) {
+                                // Seller profile image
+                                if let profileImageURL = item.sellerProfileImageURL,
+                                   let url = URL(string: profileImageURL) {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 50, height: 50)
+                                            .clipShape(Circle())
+                                    } placeholder: {
+                                        Image(systemName: "person.circle.fill")
+                                            .font(.system(size: 50))
+                                            .foregroundColor(.gray)
+                                    }
+                                } else {
+                                    Image(systemName: "person.circle.fill")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.gray)
                                 }
                                 
-                                HStack(spacing: 12) {
-                                    TextField("", text: $messageText)
-                                        .placeholder(when: messageText.isEmpty) {
-                                            Text("Type a message...")
-                                                .foregroundColor(.gray)
-                                        }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.sellerUsername ?? "Unknown seller")
+                                        .font(.headline)
                                         .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .fill(Color.white.opacity(0.1))
-                                        )
                                     
-                                    Button(action: {}) {
-                                        Text("Send")
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 24)
-                                            .padding(.vertical, 12)
-                                            .background(Color.hopeBlue)
-                                            .cornerRadius(20)
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .font(.caption)
+                                            .foregroundColor(.yellow)
+                                        Text("4.8")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                        Text("(127 reviews)")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
                                     }
+                                }
+                                
+                                Spacer()
+                                
+                                Button(action: {}) {
+                                    Text("View Profile")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(Color.hopeBlue)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.hopeBlue, lineWidth: 1)
+                                        )
                                 }
                             }
                             .padding()
-                            .background(Color.black.opacity(0.2))
-                            .padding(.top, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.hopeDarkSecondary)
+                            )
+                            .padding(.horizontal)
+                            .padding(.top, 20)
                             
-                            // Action buttons - Redesigned with HopeSwap theme
-                            VStack(spacing: 16) {
-                                // Primary action buttons
-                                HStack(spacing: 12) {
+                            // Message seller section (hide for own items)
+                            if !isOwnItem {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "message.fill")
+                                            .font(.body)
+                                            .foregroundColor(Color.hopeBlue)
+                                        
+                                        Text("Send seller a message")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                    }
+                                    
+                                    HStack(spacing: 12) {
+                                        TextField("", text: $messageText)
+                                            .placeholder(when: messageText.isEmpty) {
+                                                Text("Type a message...")
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .foregroundColor(.white)
+                                            .padding(12)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 20)
+                                                    .fill(Color.white.opacity(0.1))
+                                            )
+                                        
+                                        Button(action: {}) {
+                                            Text("Send")
+                                                .font(.headline)
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 24)
+                                                .padding(.vertical, 12)
+                                                .background(Color.hopeBlue)
+                                                .cornerRadius(20)
+                                        }
+                                    }
+                                }
+                                .padding()
+                                .background(Color.black.opacity(0.2))
+                                .padding(.top, 12)
+                            }
+                            
+                            // Action buttons - Redesigned with HopeSwap theme (hide for own items)
+                            if !isOwnItem {
+                                VStack(spacing: 16) {
+                                    // Primary action buttons
+                                    HStack(spacing: 12) {
                                     // Send offer - Primary button
                                     Button(action: {}) {
                                         HStack(spacing: 8) {
@@ -304,6 +389,7 @@ struct ListingDetailView: View {
                             .padding(.horizontal, 20)
                             .padding(.vertical, 20)
                             .background(Color.hopeDarkBg)
+                            }
                             
                             // Description section
                             VStack(alignment: .leading, spacing: 12) {
@@ -425,6 +511,24 @@ struct ListingDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        .alert("Delete Listing", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                deleteItem()
+            }
+        } message: {
+            Text("Are you sure you want to delete this listing? This action cannot be undone.")
+        }
+    }
+    
+    func deleteItem() {
+        isDeleting = true
+        Task {
+            await dataManager.deleteItem(item)
+            await MainActor.run {
+                dismiss()
+            }
+        }
     }
     
     func timeAgoString(from date: Date) -> String {

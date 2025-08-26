@@ -17,19 +17,108 @@ class DataManager: ObservableObject {
     private let firestoreManager = FirestoreManager.shared
     private let storageManager = StorageManager.shared
     private var itemsListener: ListenerRegistration?
+    private var authStateListener: AuthStateDidChangeListenerHandle?
     
     private init() {
-        self.currentUser = User(username: "JohnDoe", email: "john@example.com")
+        // Initialize with a placeholder user
+        self.currentUser = User(username: "Loading...", email: "")
+        setupAuthStateListener()
         setupRealtimeListener()
     }
     
     deinit {
         itemsListener?.remove()
+        if let authListener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(authListener)
+        }
+    }
+    
+    // Setup auth state listener to sync user data
+    private func setupAuthStateListener() {
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] auth, firebaseUser in
+            guard let self = self else { return }
+            
+            Task { @MainActor in
+                if let firebaseUser = firebaseUser {
+                    // Update current user with Firebase Auth data
+                    await self.updateCurrentUser(from: firebaseUser)
+                    
+                    // Clear all data including sample data
+                    self.clearAllData()
+                    
+                    // Re-setup listener for user-specific items
+                    self.itemsListener?.remove()
+                    self.setupRealtimeListener()
+                    
+                    // Reload data from Firebase
+                    await self.loadData()
+                } else {
+                    // User signed out - clear all data
+                    self.currentUser = User(username: "Not Signed In", email: "")
+                    self.items.removeAll()
+                    self.favorites.removeAll()
+                    self.isDataLoaded = false
+                }
+            }
+        }
+    }
+    
+    // Update current user from Firebase Auth
+    private func updateCurrentUser(from firebaseUser: FirebaseAuth.User) async {
+        let username = firebaseUser.displayName ?? firebaseUser.email?.components(separatedBy: "@").first ?? "User"
+        let email = firebaseUser.email ?? ""
+        
+        // Create a proper user object
+        var newUser = User(
+            id: UUID(), // Note: In production, you might want to use firebaseUser.uid as the ID
+            username: username,
+            email: email
+        )
+        
+        // Update profile image URL if available
+        if let photoURL = firebaseUser.photoURL {
+            newUser.profileImageURL = photoURL.absoluteString
+        }
+        
+        // Try to fetch additional user data from Firestore
+        do {
+            if let userData = try await firestoreManager.getUserProfile(userId: firebaseUser.uid) {
+                if let name = userData["name"] as? String, !name.isEmpty {
+                    newUser.username = name
+                }
+                if let avatar = userData["avatar"] as? String, !avatar.isEmpty {
+                    newUser.profileImageURL = avatar
+                }
+                // You can add more fields here as needed
+            }
+        } catch {
+            print("Error fetching user profile from Firestore: \(error)")
+        }
+        
+        self.currentUser = newUser
     }
     
     // Setup real-time listener for items
     private func setupRealtimeListener() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("🔴 No authenticated user, showing all public items")
+            // For non-authenticated users, show all items
+            itemsListener = firestoreManager.listenToItems { [weak self] items in
+                print("📥 Received \(items.count) public items from Firestore")
+                DispatchQueue.main.async {
+                    self?.items = items
+                    self?.isDataLoaded = true
+                }
+            }
+            return
+        }
+        
+        print("🎧 Setting up Firestore listener for user: \(userId)")
+        
+        // For authenticated users, we'll still show all items but can filter later
+        // In a real app, you might want to show only user's items + public items
         itemsListener = firestoreManager.listenToItems { [weak self] items in
+            print("📥 Received \(items.count) items from Firestore")
             DispatchQueue.main.async {
                 self?.items = items
                 self?.isDataLoaded = true
@@ -37,39 +126,53 @@ class DataManager: ObservableObject {
         }
     }
     
+    // Get items for current user only
+    func getCurrentUserItems() -> [Item] {
+        guard let userId = Auth.auth().currentUser?.uid else { 
+            print("❌ getCurrentUserItems: No authenticated user")
+            return [] 
+        }
+        
+        print("🔍 getCurrentUserItems: Filtering for user: \(userId)")
+        print("🔍 Total items in array: \(items.count)")
+        
+        let userItems = items.filter { item in
+            // Check both firebaseUserId and legacy userId
+            let matches = item.firebaseUserId == userId || item.userId.uuidString == userId
+            if matches {
+                print("✅ Found user item: \(item.title) - firebaseUserId: \(item.firebaseUserId ?? "nil")")
+            }
+            return matches
+        }
+        
+        print("🔍 Found \(userItems.count) items for current user")
+        return userItems
+    }
+    
     // Load data from Firebase or sample data for development
     func loadData() async {
+        print("DataManager.loadData() called")
         await MainActor.run {
             isLoading = true
             errorMessage = ""
         }
         
-        do {
-            // Try to load from Firebase first
-            let firebaseItems = try await firestoreManager.fetchItems()
-            
-            // If no items in Firebase, load sample data
-            if firebaseItems.isEmpty {
-                await loadSampleDataToFirebase()
-            } else {
-                await MainActor.run {
-                    items = firebaseItems
-                }
-            }
-            
-            await MainActor.run {
-                isDataLoaded = true
-            }
-        } catch {
-            print("Error loading data: \(error)")
-            await MainActor.run {
-                errorMessage = error.localizedDescription
-            }
-            // Fallback to local sample data
-            loadSampleDataLocally()
+        // Update user data if authenticated
+        if let firebaseUser = Auth.auth().currentUser {
+            await updateCurrentUser(from: firebaseUser)
         }
         
+        // The real-time listener in setupRealtimeListener() will handle loading items
+        // We just need to check if Firebase is empty and load sample data if needed
+        
+        try? await Task.sleep(nanoseconds: 500_000_000) // Wait 0.5s for listener to fire
+        
         await MainActor.run {
+            // Never load sample data - only real items from authenticated users
+            if items.isEmpty && !isDataLoaded {
+                print("No items found in Firebase")
+                // Don't load sample data anymore
+            }
             isLoading = false
         }
     }
@@ -79,11 +182,18 @@ class DataManager: ObservableObject {
         // Prevent loading data multiple times
         guard !isDataLoaded else { return }
         
+        // Don't load sample data for authenticated users
+        if Auth.auth().currentUser != nil && !(Auth.auth().currentUser?.isAnonymous ?? true) {
+            print("Skipping sample data for authenticated user")
+            isDataLoaded = true
+            return
+        }
+        
         // Create items with various post times for "Just listed" badges
         let now = Date()
         items = [
             {
-                var item = Item(title: "Free plants and succulents", description: "Moving out, giving away my plant collection. Includes cacti, succulents, and a small plant stand.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway)
+                var item = Item(title: "Free plants and succulents", description: "Moving out, giving away my plant collection. Includes cacti, succulents, and a small plant stand.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway, sellerUsername: "Emily Chen", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1459156212016-c812468e2115?w=400",
                     "https://images.unsplash.com/photo-1509423350716-97f9360b4e09?w=400",
@@ -93,7 +203,7 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Restaurant robot server", description: "Commercial-grade autonomous serving robot. Perfect for restaurants or events. Barely used.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "Restaurant robot server", description: "Commercial-grade autonomous serving robot. Perfect for restaurants or events. Barely used.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false, listingType: .sell, sellerUsername: "TechStartup Inc", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400",
                     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
@@ -102,12 +212,12 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600 * 4), price: 50.00, priceIsFirm: false, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "Bodhi Tree for sale", description: "Beautiful Bodhi tree (Ficus religiosa), about 3 feet tall. Sacred Buddhist tree, very healthy.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600 * 4), price: 50.00, priceIsFirm: false, isTradeItem: false, listingType: .sell, sellerUsername: "Buddhist Temple", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1502394202744-021cfbb17454?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-3600 * 6), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-3600 * 6), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Kenji Yamamoto", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1467043198406-dc953a3defa0?w=400",
                     "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400",
@@ -118,17 +228,17 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Espresso Coffee Machine", description: "Professional espresso machine with grinder. Makes amazing coffee!", category: .homeKitchen, condition: .good, userId: UUID(), location: "Anaheim", postedDate: now.addingTimeInterval(-3600 * 5), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Kitchen appliances", acceptableItems: "Stand mixer, air fryer, instant pot", openToOffers: true, listingType: .trade)
+                var item = Item(title: "Espresso Coffee Machine", description: "Professional espresso machine with grinder. Makes amazing coffee!", category: .homeKitchen, condition: .good, userId: UUID(), location: "Anaheim", postedDate: now.addingTimeInterval(-3600 * 5), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Kitchen appliances", acceptableItems: "Stand mixer, air fryer, instant pot", openToOffers: true, listingType: .trade, sellerUsername: "Coffee Lover Mike", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Need Help Moving Furniture", description: "Need 2-3 people to help move heavy furniture to second floor apartment this weekend. Pizza and drinks provided!", category: .miscellaneous, condition: .new, userId: UUID(), location: "Santa Ana", postedDate: now.addingTimeInterval(-3600 * 2), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .needHelp)
+                var item = Item(title: "Need Help Moving Furniture", description: "Need 2-3 people to help move heavy furniture to second floor apartment this weekend. Pizza and drinks provided!", category: .miscellaneous, condition: .new, userId: UUID(), location: "Santa Ana", postedDate: now.addingTimeInterval(-3600 * 2), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .needHelp, sellerUsername: "Sarah Martinez", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1603664454146-50b9bb1e7afa?w=400"]
                 return item
             }(),
             {
-                var item = Item(title: "Daily Carpool to Downtown LA", description: "Looking for carpool buddy. Leave 7:30am from Fountain Valley, return 5:30pm. Split gas costs.", category: .miscellaneous, condition: .new, userId: UUID(), location: "Fountain Valley", postedDate: now.addingTimeInterval(-86400 * 3), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .carpool)
+                var item = Item(title: "Daily Carpool to Downtown LA", description: "Looking for carpool buddy. Leave 7:30am from Fountain Valley, return 5:30pm. Split gas costs.", category: .miscellaneous, condition: .new, userId: UUID(), location: "Fountain Valley", postedDate: now.addingTimeInterval(-86400 * 3), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .carpool, sellerUsername: "David Kim", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400"]
                 return item
             }(),
@@ -159,7 +269,7 @@ class DataManager: ObservableObject {
             }(),
             // Additional items for different cities
             {
-                var item = Item(title: "MacBook Pro 14\"", description: "2023 model, M3 chip, excellent condition", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false, listingType: .sell)
+                var item = Item(title: "MacBook Pro 14\"", description: "2023 model, M3 chip, excellent condition", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Alex Thompson", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400"]
                 return item
             }(),
@@ -180,7 +290,7 @@ class DataManager: ObservableObject {
             }(),
             // New York items
             {
-                var item = Item(title: "Broadway Show Tickets", description: "2 tickets to Hamilton, orchestra seats", category: .miscellaneous, condition: .new, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Concert tickets or sports memorabilia", openToOffers: true, listingType: .trade)
+                var item = Item(title: "Broadway Show Tickets", description: "2 tickets to Hamilton, orchestra seats", category: .miscellaneous, condition: .new, userId: UUID(), location: "New York", postedDate: now.addingTimeInterval(-3600 * 4), price: nil, priceIsFirm: false, isTradeItem: true, lookingFor: "Concert tickets or sports memorabilia", openToOffers: true, listingType: .trade, sellerUsername: "TheaterFan212", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"]
                 return item
             }(),
@@ -250,6 +360,13 @@ class DataManager: ObservableObject {
         isDataLoaded = true
     }
     
+    // Clear all local data (useful when user signs in/out)
+    func clearAllData() {
+        items.removeAll()
+        favorites.removeAll()
+        isDataLoaded = false
+    }
+    
     // Load sample data to Firebase (for first-time setup)
     private func loadSampleDataToFirebase() async {
         loadSampleDataLocally() // Create the items array
@@ -274,25 +391,45 @@ class DataManager: ObservableObject {
         do {
             var newItem = item
             
+            // Set the Firebase user ID
+            if let firebaseUserId = AuthenticationManager.shared.currentUserId {
+                newItem.firebaseUserId = firebaseUserId
+            }
+            
+            // Set seller information from current user
+            newItem.sellerUsername = currentUser.username
+            newItem.sellerProfileImageURL = currentUser.profileImageURL
+            
+            print("🔵 Adding new item: \(newItem.title)")
+            print("🔵 User ID (UUID): \(newItem.userId)")
+            print("🔵 Firebase Auth UID: \(newItem.firebaseUserId ?? "nil")")
+            print("🔵 Seller: \(newItem.sellerUsername ?? "Unknown")")
+            
             // Upload images first if any
             if !images.isEmpty {
+                print("🔵 Uploading \(images.count) images...")
                 let itemId = UUID().uuidString
                 let optimizedImages = images.map { storageManager.optimizeImageForUpload($0) }
                 let imageUrls = try await storageManager.uploadItemImages(optimizedImages, itemId: itemId)
                 newItem.images = imageUrls
+                print("🔵 Images uploaded successfully: \(imageUrls)")
             }
             
             // Create item in Firestore
-            let _ = try await firestoreManager.createItem(newItem)
+            print("🔵 Creating item in Firestore...")
+            let documentId = try await firestoreManager.createItem(newItem)
+            print("✅ Item created successfully with ID: \(documentId)")
             
-            // Update local state (real-time listener will handle this automatically)
+            // The real-time listener will automatically update the local items array
+            
+            // Update local state
             await MainActor.run {
                 currentUser.itemsListed += 1
                 currentUser.totalDonated += 1
             }
             
         } catch {
-            print("Error adding item: \(error)")
+            print("❌ Error adding item: \(error)")
             await MainActor.run {
                 errorMessage = error.localizedDescription
             }

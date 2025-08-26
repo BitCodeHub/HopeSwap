@@ -14,6 +14,8 @@
 		C9DB279F2E5C621E008EEA3C /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = C9DB279E2E5C621E008EEA3C /* FirebaseFirestore */; };
 		C9DB27A12E5C621E008EEA3C /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = C9DB27A02E5C621E008EEA3C /* FirebaseMessaging */; };
 		C9DB27A52E5C63CC008EEA3C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = C9DB27A42E5C63CC008EEA3C /* FirebaseStorage */; };
+		C9DB27B22E5D756A008EEA3C /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = C9DB27B12E5D756A008EEA3C /* GoogleSignIn */; };
+		C9DB27B42E5D756A008EEA3C /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C9DB27B32E5D756A008EEA3C /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,9 +41,22 @@
 		C9DB25972E517B3D008EEA3C /* HopeSwapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HopeSwapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C9DB27B62E5D788D008EEA3C /* Exceptions for "HopeSwap" folder in "HopeSwap" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C9DB257F2E517B3C008EEA3C /* HopeSwap */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C9DB25822E517B3C008EEA3C /* HopeSwap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C9DB27B62E5D788D008EEA3C /* Exceptions for "HopeSwap" folder in "HopeSwap" target */,
+			);
 			path = HopeSwap;
 			sourceTree = "<group>";
 		};
@@ -62,7 +77,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9DB27B42E5D756A008EEA3C /* GoogleSignInSwift in Frameworks */,
 				C9DB27A12E5C621E008EEA3C /* FirebaseMessaging in Frameworks */,
+				C9DB27B22E5D756A008EEA3C /* GoogleSignIn in Frameworks */,
 				C9DB27912E5C601E008EEA3C /* FirebaseAnalytics in Frameworks */,
 				C9DB27932E5C601E008EEA3C /* FirebaseAnalyticsCore in Frameworks */,
 				C9DB27952E5C601E008EEA3C /* FirebaseAnalyticsIdentitySupport in Frameworks */,
@@ -136,6 +153,8 @@
 				C9DB279E2E5C621E008EEA3C /* FirebaseFirestore */,
 				C9DB27A02E5C621E008EEA3C /* FirebaseMessaging */,
 				C9DB27A42E5C63CC008EEA3C /* FirebaseStorage */,
+				C9DB27B12E5D756A008EEA3C /* GoogleSignIn */,
+				C9DB27B32E5D756A008EEA3C /* GoogleSignInSwift */,
 			);
 			productName = HopeSwap;
 			productReference = C9DB25802E517B3C008EEA3C /* HopeSwap.app */;
@@ -221,6 +240,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C9DB278F2E5C601E008EEA3C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				C9DB27B02E5D756A008EEA3C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9DB25812E517B3C008EEA3C /* Products */;
@@ -427,6 +447,7 @@
 				DEVELOPMENT_TEAM = W58JGZ9PD8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HopeSwap/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HopeSwap needs access to your camera to take photos of items you want to list for trades.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HopeSwap uses your location to show nearby items and help connect you with local traders.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HopeSwap needs microphone access to use the camera.";
@@ -459,6 +480,7 @@
 				DEVELOPMENT_TEAM = W58JGZ9PD8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HopeSwap/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "HopeSwap needs access to your camera to take photos of items you want to list for trades.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HopeSwap uses your location to show nearby items and help connect you with local traders.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "HopeSwap needs microphone access to use the camera.";
@@ -603,6 +625,14 @@
 				minimumVersion = 12.1.0;
 			};
 		};
+		C9DB27B02E5D756A008EEA3C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -640,6 +670,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9DB278F2E5C601E008EEA3C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		C9DB27B12E5D756A008EEA3C /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C9DB27B02E5D756A008EEA3C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		C9DB27B32E5D756A008EEA3C /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C9DB27B02E5D756A008EEA3C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -9,9 +9,12 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
+    @StateObject private var authManager = AuthenticationManager.shared
     @State private var selectedTab = 0
     @State private var showingPostOptions = false
     @State private var selectedPostType: PostType? = nil
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var showingOnboarding = false
     
     enum PostType: Identifiable {
         case itemForSale
@@ -40,6 +43,17 @@ struct ContentView: View {
     }
     
     var body: some View {
+        if !hasCompletedOnboarding {
+            OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+        } else if authManager.isSignedIn {
+            authenticatedView
+        } else {
+            SignInView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                .environmentObject(authManager)
+        }
+    }
+    
+    var authenticatedView: some View {
         ZStack {
             TabView(selection: $selectedTab) {
                 DiscoverView()

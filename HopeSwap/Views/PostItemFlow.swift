@@ -34,6 +34,7 @@ struct PostItemFlow: View {
     @State private var showingImagePicker = false
     @State private var showingCamera = false
     @State private var showingSuccessAlert = false
+    @State private var showingAuthAlert = false
     
     // Item data
     @State private var title = ""
@@ -118,6 +119,11 @@ struct PostItemFlow: View {
                     (donationAmount > 0 ? 
                         "Your item has been listed successfully for free. Thank you for your $\(String(format: "%.0f", donationAmount)) donation to pediatric cancer research!" :
                         "Your item has been listed successfully for free.")))
+        }
+        .alert("Sign In Required", isPresented: $showingAuthAlert) {
+            Button("OK") {}
+        } message: {
+            Text("Please sign in with Google or Apple to post items. This helps keep our community safe.")
         }
     }
     
@@ -288,12 +294,27 @@ struct PostItemFlow: View {
     }
     
     func postItem() {
+        // Get the actual authenticated user ID from Firebase
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else {
+            print("Error: No authenticated user found")
+            return
+        }
+        
+        // Prevent anonymous users from posting
+        if AuthenticationManager.shared.user?.isAnonymous ?? true {
+            print("Error: Anonymous users cannot post items")
+            showingAuthAlert = true
+            return
+        }
+        
+        let userIdUUID = UUID(uuidString: currentUserId) ?? UUID()
+        
         let newItem = Item(
             title: title,
             description: description,
             category: selectedCategory,
             condition: selectedCondition,
-            userId: dataManager.currentUser.id,
+            userId: userIdUUID,
             location: location,
             price: isTradeItem ? nil : Double(price),
             priceIsFirm: priceIsFirm,

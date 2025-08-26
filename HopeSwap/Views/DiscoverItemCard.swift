@@ -67,21 +67,35 @@ struct DiscoverItemCard: View {
             .cornerRadius(12)
             
             // Price and title below image
-            HStack(spacing: 0) {
-                Text(priceText)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 0) {
+                    Text(priceText)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text(" - ")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                    
+                    Text(item.title)
+                        .font(.system(size: 14))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Text(" - ")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-                
-                Text(item.title)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
+                // Seller info
+                HStack(spacing: 4) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                    
+                    Text(item.sellerUsername ?? "Unknown seller")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

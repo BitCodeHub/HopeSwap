@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Firebase
+import GoogleSignIn
 
 @main
 struct HopeSwapApp: App {
@@ -43,6 +44,9 @@ struct HopeSwapApp: App {
         WindowGroup {
             SimpleLaunchView()
                 .preferredColorScheme(.dark)
+                .onOpenURL { url in
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
     }
 }

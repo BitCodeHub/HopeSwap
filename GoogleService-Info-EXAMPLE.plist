@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CLIENT_ID</key>
-	<string>205596436080-41sd4drhac46jmv29e0b902g56kltrbk.apps.googleusercontent.com</string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.205596436080-41sd4drhac46jmv29e0b902g56kltrbk</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDml-yqk_J3ejQfmdSADbYUkVFSItddsbA</string>
 	<key>GCM_SENDER_ID</key>
@@ -30,5 +26,10 @@
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:205596436080:ios:7b58865162884f9f87f6b5</string>
+	<!-- THE FOLLOWING KEYS WILL BE ADDED AFTER OAUTH SETUP -->
+	<key>CLIENT_ID</key>
+	<string>205596436080-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.205596436080-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</string>
 </dict>
 </plist>

@@ -39,7 +39,26 @@ class FirestoreManager: ObservableObject {
         }
         
         var itemData = item.toDictionary()
-        itemData["userId"] = userId
+        // Don't override userId if it's already set correctly
+        if itemData["userId"] as? String == nil {
+            itemData["userId"] = userId
+        }
+        
+        // Add seller information from current user
+        if itemData["sellerUsername"] as? String == nil || (itemData["sellerUsername"] as? String)?.isEmpty == true {
+            if let displayName = Auth.auth().currentUser?.displayName {
+                itemData["sellerUsername"] = displayName
+            } else if let email = Auth.auth().currentUser?.email {
+                itemData["sellerUsername"] = email.components(separatedBy: "@").first ?? "User"
+            }
+        }
+        
+        if itemData["sellerProfileImageURL"] as? String == nil || (itemData["sellerProfileImageURL"] as? String)?.isEmpty == true {
+            if let photoURL = Auth.auth().currentUser?.photoURL {
+                itemData["sellerProfileImageURL"] = photoURL.absoluteString
+            }
+        }
+        
         itemData["createdAt"] = Timestamp()
         itemData["updatedAt"] = Timestamp()
         

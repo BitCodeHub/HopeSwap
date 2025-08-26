@@ -9,7 +9,8 @@ struct Item: Identifiable, Codable, Equatable {
     var category: Category
     var condition: Condition
     var images: [String]
-    var userId: UUID
+    var userId: UUID  // Keep for backward compatibility
+    var firebaseUserId: String? // Firebase Auth UID
     var postedDate: Date
     var status: ItemStatus
     var location: String
@@ -27,6 +28,10 @@ struct Item: Identifiable, Codable, Equatable {
     // Listing type to track which flow created this item
     var listingType: ListingType
     
+    // Seller information
+    var sellerUsername: String?
+    var sellerProfileImageURL: String?
+    
     // New properties for Discover view
     var isJustListed: Bool {
         let hoursSincePosted = Date().timeIntervalSince(postedDate) / 3600
@@ -42,6 +47,7 @@ struct Item: Identifiable, Codable, Equatable {
          category: Category, 
          condition: Condition, 
          userId: UUID, 
+         firebaseUserId: String? = nil,
          location: String,
          postedDate: Date = Date(),
          price: Double? = nil,
@@ -52,7 +58,9 @@ struct Item: Identifiable, Codable, Equatable {
          tradeSuggestions: String? = nil,
          openToOffers: Bool = false,
          images: [String] = [],
-         listingType: ListingType = .sell) {
+         listingType: ListingType = .sell,
+         sellerUsername: String? = nil,
+         sellerProfileImageURL: String? = nil) {
         self.id = id
         self.title = title
         self.description = description
@@ -60,6 +68,7 @@ struct Item: Identifiable, Codable, Equatable {
         self.condition = condition
         self.images = images
         self.userId = userId
+        self.firebaseUserId = firebaseUserId
         self.postedDate = postedDate
         self.status = .available
         self.location = location
@@ -72,6 +81,8 @@ struct Item: Identifiable, Codable, Equatable {
         self.tradeSuggestions = tradeSuggestions
         self.openToOffers = openToOffers
         self.listingType = listingType
+        self.sellerUsername = sellerUsername
+        self.sellerProfileImageURL = sellerProfileImageURL
     }
 }
 
@@ -177,6 +188,8 @@ extension Item {
     func toDictionary() -> [String: Any] {
         return [
             "id": id.uuidString,
+            "userId": userId.uuidString,  // Legacy UUID for backward compatibility
+            "firebaseUserId": firebaseUserId ?? "",  // Firebase Auth UID - Critical for filtering
             "title": title,
             "description": description,
             "price": price ?? 0,
@@ -186,6 +199,7 @@ extension Item {
             "images": images,
             "listingType": listingType.rawValue,
             "postedDate": Timestamp(date: postedDate),
+            "createdAt": FieldValue.serverTimestamp(),  // For proper ordering
             "status": status.rawValue,
             "favoriteCount": favoriteCount,
             "priceIsFirm": priceIsFirm,
@@ -195,7 +209,9 @@ extension Item {
             "tradeSuggestions": tradeSuggestions ?? "",
             "openToOffers": openToOffers,
             "isNearby": isNearby,
-            "distance": distance ?? 0
+            "distance": distance ?? 0,
+            "sellerUsername": sellerUsername ?? "",
+            "sellerProfileImageURL": sellerProfileImageURL ?? ""
         ]
     }
     
@@ -234,8 +250,14 @@ extension Item {
         let isNearby = data["isNearby"] as? Bool ?? false
         let distance = data["distance"] as? Double
         
-        // Create a temporary userId (in production, you'd get this from the document)
-        let userId = UUID() // You might want to store userId as string in Firestore
+        // Parse userId from Firestore
+        let firebaseUserId = data["userId"] as? String
+        let legacyUserIdString = data["legacyUserId"] as? String ?? data["userId"] as? String ?? ""
+        let userId = UUID(uuidString: legacyUserIdString) ?? UUID()
+        
+        // Parse seller information
+        let sellerUsername = data["sellerUsername"] as? String
+        let sellerProfileImageURL = data["sellerProfileImageURL"] as? String
         
         var item = Item(
             id: id,
@@ -244,6 +266,7 @@ extension Item {
             category: category,
             condition: condition,
             userId: userId,
+            firebaseUserId: firebaseUserId,
             location: location,
             postedDate: timestamp.dateValue(),
             price: finalPrice,
@@ -254,7 +277,9 @@ extension Item {
             tradeSuggestions: tradeSuggestions?.isEmpty == true ? nil : tradeSuggestions,
             openToOffers: openToOffers,
             images: images,
-            listingType: listingType
+            listingType: listingType,
+            sellerUsername: sellerUsername?.isEmpty == true ? nil : sellerUsername,
+            sellerProfileImageURL: sellerProfileImageURL?.isEmpty == true ? nil : sellerProfileImageURL
         )
         
         item.status = status
@@ -302,8 +327,14 @@ extension Item {
         let isNearby = data["isNearby"] as? Bool ?? false
         let distance = data["distance"] as? Double
         
-        // Create a temporary userId (in production, you'd get this from the document)
-        let userId = UUID() // You might want to store userId as string in Firestore
+        // Parse userId from Firestore
+        let firebaseUserId = data["userId"] as? String
+        let legacyUserIdString = data["legacyUserId"] as? String ?? data["userId"] as? String ?? ""
+        let userId = UUID(uuidString: legacyUserIdString) ?? UUID()
+        
+        // Parse seller information
+        let sellerUsername = data["sellerUsername"] as? String
+        let sellerProfileImageURL = data["sellerProfileImageURL"] as? String
         
         var item = Item(
             id: id,
@@ -312,6 +343,7 @@ extension Item {
             category: category,
             condition: condition,
             userId: userId,
+            firebaseUserId: firebaseUserId,
             location: location,
             postedDate: timestamp.dateValue(),
             price: finalPrice,
@@ -322,7 +354,9 @@ extension Item {
             tradeSuggestions: tradeSuggestions?.isEmpty == true ? nil : tradeSuggestions,
             openToOffers: openToOffers,
             images: images,
-            listingType: listingType
+            listingType: listingType,
+            sellerUsername: sellerUsername?.isEmpty == true ? nil : sellerUsername,
+            sellerProfileImageURL: sellerProfileImageURL?.isEmpty == true ? nil : sellerProfileImageURL
         )
         
         item.status = status

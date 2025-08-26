@@ -31,9 +31,11 @@ struct DiscoverView: View {
     var displayedItems: [Item] {
         // If no filters are applied, show all items
         if searchText.isEmpty && selectedCategory == nil && locationManager.isUsingCurrentLocation && searchedLocation.isEmpty {
+            print("DiscoverView: Showing all items, count: \(dataManager.items.count)")
             return dataManager.items
         }
         // Otherwise show filtered items
+        print("DiscoverView: Showing filtered items, count: \(filteredItems.count)")
         return filteredItems
     }
     let columns = [
