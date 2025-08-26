@@ -56,25 +56,26 @@ struct DiscoverView: View {
                         // Top bar with tabs and search
                         HStack(spacing: 0) {
                             // Tab selector on the left
-                            HStack(spacing: 0) {
-                                ForEach(tabs, id: \.self) { tab in
-                                    TabButton(
-                                        title: tab,
-                                        isSelected: selectedTab == tab,
-                                        showChevron: tab == "More",
-                                        action: { 
-                                            selectedTab = tab
-                                            if tab == "More" {
-                                                showCategorySelection = true
-                                            } else if tab == "Favorites" {
-                                                showFavoritesView = true
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 4) {
+                                    ForEach(tabs, id: \.self) { tab in
+                                        TabButton(
+                                            title: tab,
+                                            isSelected: selectedTab == tab,
+                                            showChevron: tab == "More",
+                                            action: { 
+                                                selectedTab = tab
+                                                if tab == "More" {
+                                                    showCategorySelection = true
+                                                } else if tab == "Favorites" {
+                                                    showFavoritesView = true
+                                                }
                                             }
-                                        }
-                                    )
+                                        )
+                                    }
                                 }
                             }
-                            
-                            Spacer()
+                            .frame(maxWidth: .infinity)
                             
                             // Search icon on the right
                             Button(action: { 
@@ -87,12 +88,12 @@ struct DiscoverView: View {
                                 }
                             }) {
                                 Image(systemName: showSearchBar ? "xmark" : "magnifyingglass")
-                                    .font(.title2)
+                                    .font(.title3)
                                     .foregroundColor(.white)
-                                    .frame(width: 44, height: 44)
+                                    .frame(width: 40, height: 40)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 12)
                         
                         // Search bar (when visible)
                         if showSearchBar {
@@ -623,24 +624,24 @@ struct TabButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            HStack(spacing: 3) {
                 Text(title)
-                    .font(.headline)
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
                 
                 if showChevron {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
                 }
             }
-            .padding(.horizontal, title == "For you" ? 14 : 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .fixedSize(horizontal: true, vertical: false)
             .background(
                 Group {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 18)
                             .fill(tabColor(for: title))
                     }
                 }
