@@ -406,23 +406,25 @@ struct ListingDetailView: View {
                                     }
                                     .buttonStyle(PressedButtonStyle())
                                     
-                                    Button(action: {}) {
+                                    Button(action: {
+                                        dataManager.toggleFavorite(item.id)
+                                    }) {
                                         VStack(spacing: 6) {
-                                            Image(systemName: "bookmark")
+                                            Image(systemName: dataManager.favorites.contains(item.id) ? "bookmark.fill" : "bookmark")
                                                 .font(.title2)
-                                                .foregroundColor(.hopeTextPrimary)
-                                            Text("Save")
+                                                .foregroundColor(dataManager.favorites.contains(item.id) ? Color.hopePink : .hopeTextPrimary)
+                                            Text(dataManager.favorites.contains(item.id) ? "Saved" : "Save")
                                                 .font(.subheadline)
                                                 .fontWeight(.medium)
-                                                .foregroundColor(.hopeTextPrimary)
+                                                .foregroundColor(dataManager.favorites.contains(item.id) ? Color.hopePink : .hopeTextPrimary)
                                         }
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 14)
-                                        .background(Color.hopeDarkSecondary)
+                                        .background(dataManager.favorites.contains(item.id) ? Color.hopePink.opacity(0.15) : Color.hopeDarkSecondary)
                                         .cornerRadius(10)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.hopeTextSecondary.opacity(0.2), lineWidth: 1)
+                                                .stroke(dataManager.favorites.contains(item.id) ? Color.hopePink.opacity(0.3) : Color.hopeTextSecondary.opacity(0.2), lineWidth: 1)
                                         )
                                     }
                                     .buttonStyle(PressedButtonStyle())

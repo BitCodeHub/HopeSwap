@@ -2,39 +2,86 @@ import SwiftUI
 
 struct FavoritesView: View {
     @EnvironmentObject var dataManager: DataManager
+    @State private var selectedItem: Item? = nil
+    @Environment(\.presentationMode) var presentationMode
+    
+    let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                Color.clear
-                if dataManager.getFavoriteItems().isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "heart.slash")
-                            .font(.system(size: 80))
-                            .foregroundColor(.gray.opacity(0.5))
+            ZStack {
+                Color.hopeDarkBg
+                    .ignoresSafeArea()
+                
+                VStack {
+                    // Custom header
+                    HStack {
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                        }
                         
-                        Text("No favorites yet")
+                        Spacer()
+                        
+                        Text("Favorites")
                             .font(.title2)
-                            .foregroundColor(.gray)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
                         
-                        Text("Swipe right on items you love!")
-                            .font(.subheadline)
-                            .foregroundColor(.gray.opacity(0.8))
+                        Spacer()
+                        
+                        // Spacer to balance the header
+                        Color.clear
+                            .frame(width: 44, height: 44)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, 100)
-                } else {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
-                        ForEach(dataManager.getFavoriteItems()) { item in
-                            FavoriteItemCard(item: item)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    
+                    if dataManager.getFavoriteItems().isEmpty {
+                        Spacer()
+                        
+                        VStack(spacing: 20) {
+                            Image(systemName: "heart.slash")
+                                .font(.system(size: 80))
+                                .foregroundColor(.gray.opacity(0.5))
+                            
+                            Text("No favorites yet")
+                                .font(.title2)
+                                .foregroundColor(.gray)
+                            
+                            Text("Tap the heart icon on items you love!")
+                                .font(.subheadline)
+                                .foregroundColor(.gray.opacity(0.8))
+                        }
+                        
+                        Spacer()
+                    } else {
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(dataManager.getFavoriteItems()) { item in
+                                    DiscoverItemCard(item: item, isCompact: false)
+                                        .onTapGesture {
+                                            selectedItem = item
+                                        }
+                                }
+                            }
+                            .padding()
+                            .padding(.bottom, 100)
                         }
                     }
-                    .padding()
                 }
             }
-            .background(Color.hopeDarkBg)
-            .navigationTitle("Favorites")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarHidden(true)
+        }
+        .sheet(item: $selectedItem) { item in
+            ListingDetailView(item: item)
         }
     }
 }

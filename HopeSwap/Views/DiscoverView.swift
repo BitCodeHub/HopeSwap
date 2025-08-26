@@ -25,8 +25,9 @@ struct DiscoverView: View {
     @State private var selectedListingTypes: [ListingType]? = nil
     @State private var filterByJustListed = false
     @State private var searchRadius: Double = 15
+    @State private var showFavoritesView = false
     
-    let tabs = ["Sell", "For you", "Local", "More"]
+    let tabs = ["Sell", "For you", "Local", "Favorites", "More"]
     
     var displayedItems: [Item] {
         // If no filters are applied, show all items
@@ -65,6 +66,8 @@ struct DiscoverView: View {
                                             selectedTab = tab
                                             if tab == "More" {
                                                 showCategorySelection = true
+                                            } else if tab == "Favorites" {
+                                                showFavoritesView = true
                                             }
                                         }
                                     )
@@ -452,6 +455,10 @@ struct DiscoverView: View {
                 filterByJustListed = false
             }
         }
+        .sheet(isPresented: $showFavoritesView) {
+            FavoritesView()
+                .environmentObject(dataManager)
+        }
     }
     
     private func updateLocationFromZipCode(_ zip: String) {
@@ -649,6 +656,8 @@ struct TabButton: View {
             return Color.hopeBlue
         case "Local":
             return Color.hopeGreen
+        case "Favorites":
+            return Color.hopePink
         case "More":
             return Color.hopePurple
         default:
