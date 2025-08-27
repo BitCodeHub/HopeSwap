@@ -32,6 +32,10 @@ struct ListingDetailView: View {
     @State private var showingMessageError = false
     @State private var messageErrorText = ""
     @FocusState private var isMessageFieldFocused: Bool
+    @State private var showingAskSuggestions = false
+    @State private var showingMakeOffer = false
+    @State private var offerPrice = ""
+    @State private var selectedSuggestion = ""
     
     var isOwnItem: Bool {
         guard let currentUserId = AuthenticationManager.shared.currentUserId else { 
@@ -309,134 +313,9 @@ struct ListingDetailView: View {
                             .padding(.horizontal)
                             .padding(.top, 20)
                             
-                            // Message seller section (hide for own items)
-                            if !isOwnItem {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "message.fill")
-                                            .font(.body)
-                                            .foregroundColor(Color.hopeBlue)
-                                        
-                                        Text("Send seller a message")
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                    }
-                                    
-                                    HStack(spacing: 12) {
-                                        ZStack(alignment: .leading) {
-                                            if messageText.isEmpty || messageText == "Is this still available?" {
-                                                Text(messageText.isEmpty ? "Type a message..." : messageText)
-                                                    .foregroundColor(.gray)
-                                                    .padding(.horizontal, 12)
-                                                    .allowsHitTesting(false) // Allow taps to pass through to TextField
-                                            }
-                                            
-                                            TextField("", text: $messageText, onEditingChanged: { isEditing in
-                                                if isEditing && messageText == "Is this still available?" {
-                                                    messageText = ""
-                                                }
-                                            })
-                                            .foregroundColor(.white)
-                                            .padding(12)
-                                            .focused($isMessageFieldFocused)
-                                            .onTapGesture {
-                                                if messageText == "Is this still available?" {
-                                                    messageText = ""
-                                                }
-                                                isMessageFieldFocused = true
-                                            }
-                                        }
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 20)
-                                                .fill(Color.white.opacity(0.1))
-                                        )
-                                        .onTapGesture {
-                                            if messageText == "Is this still available?" {
-                                                messageText = ""
-                                            }
-                                            isMessageFieldFocused = true
-                                        }
-                                        
-                                        Button(action: {
-                                            sendMessage()
-                                        }) {
-                                            if isSendingMessage {
-                                                ProgressView()
-                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                                    .frame(width: 20, height: 20)
-                                                    .padding(.horizontal, 30)
-                                                    .padding(.vertical, 12)
-                                                    .background(Color.hopeBlue.opacity(0.7))
-                                                    .cornerRadius(20)
-                                            } else {
-                                                Text("Send")
-                                                    .font(.headline)
-                                                    .foregroundColor(.white)
-                                                    .padding(.horizontal, 24)
-                                                    .padding(.vertical, 12)
-                                                    .background(
-                                                        (messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingMessage) 
-                                                        ? Color.gray.opacity(0.5) 
-                                                        : Color.hopeBlue
-                                                    )
-                                                    .cornerRadius(20)
-                                            }
-                                        }
-                                        .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingMessage)
-                                    }
-                                }
-                                .padding()
-                                .background(Color.black.opacity(0.2))
-                                .padding(.top, 12)
-                            }
                             
                             // Action buttons - Redesigned with HopeSwap theme (hide for own items)
                             if !isOwnItem {
-                                VStack(spacing: 16) {
-                                    // Primary action buttons
-                                    HStack(spacing: 12) {
-                                    // Send offer - Primary button
-                                    Button(action: {}) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "person.2.fill")
-                                                .font(.title3)
-                                                .foregroundColor(.white)
-                                            Text("Send offer")
-                                                .font(.headline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.white)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 16)
-                                        .background(Color.hopeBlue)
-                                        .cornerRadius(12)
-                                        .shadow(color: Color.hopeBlue.opacity(0.3), radius: 8, x: 0, y: 4)
-                                    }
-                                    .buttonStyle(PressedButtonStyle())
-                                    
-                                    // Alerts - Secondary accent button
-                                    Button(action: {}) {
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "bell.fill")
-                                                .font(.title3)
-                                                .foregroundColor(.hopeBlue)
-                                            Text("Alerts")
-                                                .font(.headline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.hopeBlue)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 16)
-                                        .background(Color.hopeBlue.opacity(0.15))
-                                        .cornerRadius(12)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.hopeBlue.opacity(0.3), lineWidth: 1)
-                                        )
-                                    }
-                                    .buttonStyle(PressedButtonStyle())
-                                }
-                                
                                 // Secondary action buttons
                                 HStack(spacing: 12) {
                                     Button(action: {
@@ -641,11 +520,58 @@ struct ListingDetailView: View {
                             }
                             .padding(.top, 8)
                         }
-                        .padding(.bottom, 100) // Space for tab bar
+                        .padding(.bottom, isOwnItem ? 100 : 160) // More space when showing buttons
+                    }
+                }
+                
+                // Fixed buttons at the bottom (only show if not own item)
+                if !isOwnItem {
+                    VStack(spacing: 0) {
+                        Divider()
+                            .background(Color.gray.opacity(0.3))
+                        
+                        HStack(spacing: 16) {
+                            // Ask button
+                            Button(action: {
+                                showingAskSuggestions = true
+                            }) {
+                                Text("Ask")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(Color.hopeGreen)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 25)
+                                            .stroke(Color.hopeGreen, lineWidth: 2)
+                                    )
+                            }
+                            .buttonStyle(PressedButtonStyle())
+                            
+                            // Make offer button
+                            Button(action: {
+                                showingMakeOffer = true
+                                if let price = item.price {
+                                    offerPrice = String(Int(price))
+                                }
+                            }) {
+                                Text("Make offer")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 50)
+                                    .background(Color.hopeGreen)
+                                    .cornerRadius(25)
+                            }
+                            .buttonStyle(PressedButtonStyle())
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(Color.hopeDarkBg)
                     }
                 }
             }
-        }
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: $showingImageGallery) {
             ImageGalleryView(images: item.images, selectedIndex: $selectedImageIndex)
@@ -699,6 +625,36 @@ struct ListingDetailView: View {
             }
         } message: {
             Text(messageErrorText)
+        }
+        .sheet(isPresented: $showingAskSuggestions) {
+            AskSuggestionsSheet(
+                showingAskSuggestions: $showingAskSuggestions,
+                messageText: $messageText,
+                selectedSuggestion: $selectedSuggestion,
+                onSend: {
+                    sendMessage()
+                    showingAskSuggestions = false
+                }
+            )
+            .presentationDetents([.height(400)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.hopeDarkSecondary)
+        }
+        .sheet(isPresented: $showingMakeOffer) {
+            MakeOfferSheet(
+                item: item,
+                showingMakeOffer: $showingMakeOffer,
+                offerPrice: $offerPrice,
+                onSubmit: { price in
+                    // Send offer message
+                    messageText = "I'd like to offer $\(price) for this item."
+                    sendMessage()
+                    showingMakeOffer = false
+                }
+            )
+            .presentationDetents([.height(400)])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(Color.hopeDarkSecondary)
         }
     }
     
@@ -975,6 +931,233 @@ struct TradePreferenceRow: View {
             }
             
             Spacer()
+        }
+    }
+}
+
+struct AskSuggestionsSheet: View {
+    @Binding var showingAskSuggestions: Bool
+    @Binding var messageText: String
+    @Binding var selectedSuggestion: String
+    let onSend: () -> Void
+    @FocusState private var isCustomMessageFocused: Bool
+    @State private var customMessage = ""
+    
+    let suggestions = [
+        "Hi, is this still available?",
+        "Hi, I'd like to buy this.",
+        "Hi, can I pick it up today?",
+        "Is the price negotiable?",
+        "What's the condition like?",
+        "Can you deliver this?",
+        "Are you available this weekend?"
+    ]
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Ask a question")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: {
+                    showingAskSuggestions = false
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding()
+            
+            ScrollView {
+                VStack(spacing: 12) {
+                    // Suggested messages
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        Button(action: {
+                            messageText = suggestion
+                            onSend()
+                        }) {
+                            Text(suggestion)
+                                .font(.body)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(Color.hopeDarkBg)
+                                .cornerRadius(12)
+                        }
+                        .buttonStyle(PressedButtonStyle())
+                    }
+                    
+                    // Custom message input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Or type your own message")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            TextField("Type your message...", text: $customMessage)
+                                .foregroundColor(.white)
+                                .padding(12)
+                                .background(Color.hopeDarkBg)
+                                .cornerRadius(8)
+                                .focused($isCustomMessageFocused)
+                            
+                            Button(action: {
+                                if !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    messageText = customMessage
+                                    onSend()
+                                }
+                            }) {
+                                Image(systemName: "paperplane.fill")
+                                    .foregroundColor(customMessage.isEmpty ? .gray : Color.hopeGreen)
+                                    .padding(12)
+                                    .background(Color.hopeDarkBg)
+                                    .cornerRadius(8)
+                            }
+                            .disabled(customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .padding()
+            }
+        }
+        .onAppear {
+            isCustomMessageFocused = true
+        }
+    }
+}
+
+struct MakeOfferSheet: View {
+    let item: Item
+    @Binding var showingMakeOffer: Bool
+    @Binding var offerPrice: String
+    let onSubmit: (Int) -> Void
+    @FocusState private var isPriceFocused: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Enter Your Offer")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button("Cancel") {
+                    showingMakeOffer = false
+                }
+                .foregroundColor(Color.hopeGreen)
+            }
+            .padding()
+            
+            VStack(spacing: 24) {
+                // Price input
+                VStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.hopeDarkBg)
+                            .frame(height: 60)
+                        
+                        HStack(spacing: 0) {
+                            Text("$")
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundColor(.white)
+                            
+                            TextField("0", text: $offerPrice)
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .keyboardType(.numberPad)
+                                .focused($isPriceFocused)
+                                .onChange(of: offerPrice) { newValue in
+                                    // Only allow numbers
+                                    offerPrice = newValue.filter { $0.isNumber }
+                                }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    if let originalPrice = item.price, originalPrice > 0 {
+                        Text("Listed at $\(Int(originalPrice))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                }
+                
+                // Item info
+                HStack(spacing: 12) {
+                    if let firstImage = item.images.first, let url = URL(string: firstImage) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .foregroundColor(.gray)
+                                )
+                        }
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text(item.title)
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .lineLimit(2)
+                        
+                        if let condition = item.condition {
+                            Text(condition.rawValue)
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+                .background(Color.black.opacity(0.3))
+                .cornerRadius(12)
+                
+                Spacer()
+                
+                // Submit button
+                Button(action: {
+                    if let price = Int(offerPrice), price > 0 {
+                        onSubmit(price)
+                    }
+                }) {
+                    Text("Make offer")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(
+                            offerPrice.isEmpty || Int(offerPrice) == 0 
+                            ? Color.gray 
+                            : Color.hopeGreen
+                        )
+                        .cornerRadius(25)
+                }
+                .disabled(offerPrice.isEmpty || Int(offerPrice) == 0)
+                .padding(.bottom)
+            }
+            .padding()
+        }
+        .onAppear {
+            isPriceFocused = true
         }
     }
 }
