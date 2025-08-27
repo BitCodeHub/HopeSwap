@@ -2,6 +2,22 @@ import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
 struct InboxView: View {
     @EnvironmentObject var dataManager: DataManager
     @StateObject private var notificationManager = NotificationManager.shared
@@ -9,9 +25,6 @@ struct InboxView: View {
     @State private var userProfiles: [String: User] = [:] // Cache user profiles
     @State private var selectedConversation: Conversation? = nil
     @State private var isLoading = true
-    @State private var isEditing = false
-    @State private var selectedConversations = Set<String>()
-    @State private var showingSortMenu = false
     @State private var sortOption: SortOption = .newest
     @State private var groupByListing = false
     @State private var showingNotifications = false
@@ -31,19 +44,6 @@ struct InboxView: View {
     @ViewBuilder
     var headerView: some View {
         HStack {
-            if isEditing {
-                Button(action: {
-                    isEditing = false
-                    selectedConversations.removeAll()
-                }) {
-                    Text("Cancel")
-                        .font(.body)
-                        .foregroundColor(Color.hopeGreen)
-                }
-            }
-            
-            Spacer()
-            
             Text("Inbox")
                 .font(.largeTitle)
                 .fontWeight(.bold)
@@ -89,83 +89,74 @@ struct InboxView: View {
                     // Custom header
                     headerView
                     
-                    // Group by listing toggle and edit button
-                    HStack(spacing: 20) {
-                        // Group by listing toggle
-                        Button(action: {
-                            withAnimation {
-                                groupByListing.toggle()
-                            }
-                        }) {
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 50, height: 50)
-                                    .overlay(
-                                        Image(systemName: groupByListing ? "square.grid.2x2" : "list.bullet")
-                                            .font(.title3)
-                                            .foregroundColor(.white)
-                                    )
-                                
-                                Text("Group by listing")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Toggle("", isOn: $groupByListing)
-                                    .labelsHidden()
-                                    .tint(Color.hopeGreen)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Edit button
-                        Button(action: {
-                            withAnimation {
-                                isEditing.toggle()
-                                if !isEditing {
-                                    selectedConversations.removeAll()
+                    // View controls
+                    HStack(spacing: 16) {
+                        // Sort button
+                        Menu {
+                            ForEach(SortOption.allCases, id: \.self) { option in
+                                Button(action: {
+                                    sortOption = option
+                                }) {
+                                    HStack {
+                                        Text(option.title)
+                                        if sortOption == option {
+                                            Spacer()
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
                                 }
                             }
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: isEditing ? "checkmark.circle.fill" : "pencil")
-                                    .font(.body)
-                                Text(isEditing ? "Done" : "Edit")
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                            }
-                            .foregroundColor(Color.hopeGreen)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    
-                    // Sort button
-                    HStack {
-                        Spacer()
-                        
-                        Button(action: {
-                            showingSortMenu = true
-                        }) {
-                            HStack(spacing: 8) {
+                        } label: {
+                            HStack(spacing: 6) {
                                 Image(systemName: "arrow.up.arrow.down")
                                     .font(.system(size: 14))
-                                Text("Sort: \(sortOption.title)")
-                                    .font(.system(size: 16))
+                                Text(sortOption.title)
+                                    .font(.system(size: 15, weight: .medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12))
                             }
-                            .foregroundColor(Color.hopeGreen)
-                            .padding(.horizontal, 20)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(Color.hopeGreen, lineWidth: 2)
-                            )
+                            .background(Color.hopeDarkSecondary)
+                            .cornerRadius(20)
                         }
+                        
+                        Spacer()
+                        
+                        // View mode buttons
+                        HStack(spacing: 0) {
+                            Button(action: {
+                                withAnimation {
+                                    groupByListing = false
+                                }
+                            }) {
+                                Image(systemName: "list.bullet")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(groupByListing ? .gray : .black)
+                                    .frame(width: 44, height: 36)
+                                    .background(groupByListing ? Color.clear : Color.white)
+                                    .cornerRadius(18, corners: [.topLeft, .bottomLeft])
+                            }
+                            
+                            Button(action: {
+                                withAnimation {
+                                    groupByListing = true
+                                }
+                            }) {
+                                Image(systemName: "square.grid.2x2")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(groupByListing ? .black : .gray)
+                                    .frame(width: 44, height: 36)
+                                    .background(groupByListing ? Color.white : Color.clear)
+                                    .cornerRadius(18, corners: [.topRight, .bottomRight])
+                            }
+                        }
+                        .background(Color.hopeDarkSecondary)
+                        .cornerRadius(18)
                     }
                     .padding(.horizontal)
-                    .padding(.bottom, 8)
+                    .padding(.vertical, 12)
                     
                     
                     if isLoading {
@@ -197,19 +188,13 @@ struct InboxView: View {
                                 ConversationRowEnhanced(
                                     conversation: conversation,
                                     otherUser: getOtherUser(from: conversation),
-                                    isEditing: isEditing,
-                                    isSelected: selectedConversations.contains(conversation.id),
                                     isSystem: conversation.lastMessage.contains("sold") || getOtherUser(from: conversation)?.name == "OfferUp"
                                 )
                                 .listRowBackground(Color.hopeDarkBg)
                                 .listRowSeparator(.hidden)
                                 .listRowInsets(EdgeInsets())
                                 .onTapGesture {
-                                    if isEditing {
-                                        toggleSelection(for: conversation)
-                                    } else {
-                                        selectedConversation = conversation
-                                    }
+                                    selectedConversation = conversation
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
@@ -225,29 +210,11 @@ struct InboxView: View {
                         .scrollContentBackground(.hidden)
                         
                         Spacer()
-                        
-                        // Delete button when editing
-                        if isEditing && !selectedConversations.isEmpty {
-                            Button(action: deleteSelectedConversations) {
-                                HStack {
-                                    Image(systemName: "trash")
-                                    Text("Delete (\(selectedConversations.count))")
-                                }
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.red)
-                                .cornerRadius(12)
-                            }
-                            .padding()
-                            .padding(.bottom, 80)
-                        }
                     }
                 }
                 
                 // Start new chat button at the bottom
-                if !conversations.isEmpty && !isEditing {
+                if !conversations.isEmpty {
                     VStack {
                         Spacer()
                         
@@ -279,18 +246,6 @@ struct InboxView: View {
         }
         .sheet(isPresented: $showingNotifications) {
             NotificationListView()
-        }
-        .actionSheet(isPresented: $showingSortMenu) {
-            ActionSheet(
-                title: Text("Sort messages by"),
-                buttons: SortOption.allCases.map { option in
-                    .default(
-                        Text(option.title + (sortOption == option ? " ✓" : ""))
-                    ) {
-                        sortOption = option
-                    }
-                } + [.cancel()]
-            )
         }
     }
     
@@ -389,30 +344,12 @@ struct InboxView: View {
         }
     }
     
-    private func toggleSelection(for conversation: Conversation) {
-        if selectedConversations.contains(conversation.id) {
-            selectedConversations.remove(conversation.id)
-        } else {
-            selectedConversations.insert(conversation.id)
-        }
-    }
-    
     private func deleteConversation(_ conversation: Conversation) {
         // Delete from Firestore
         db.collection("conversations").document(conversation.id).delete()
         
         // Remove from local array
         conversations.removeAll { $0.id == conversation.id }
-    }
-    
-    private func deleteSelectedConversations() {
-        for conversationId in selectedConversations {
-            db.collection("conversations").document(conversationId).delete()
-        }
-        
-        conversations.removeAll { selectedConversations.contains($0.id) }
-        selectedConversations.removeAll()
-        isEditing = false
     }
     
     private func getOtherUser(from conversation: Conversation) -> User? {
@@ -425,8 +362,6 @@ struct InboxView: View {
 struct ConversationRowEnhanced: View {
     let conversation: Conversation
     let otherUser: User?
-    let isEditing: Bool
-    let isSelected: Bool
     let isSystem: Bool
     @State private var item: Item? = nil
     
@@ -493,14 +428,6 @@ struct ConversationRowEnhanced: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Selection indicator in edit mode
-            if isEditing {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundColor(isSelected ? Color.hopeGreen : .gray)
-                    .animation(.easeInOut(duration: 0.2), value: isSelected)
-            }
-            
             profileView
             
             VStack(alignment: .leading, spacing: 6) {
