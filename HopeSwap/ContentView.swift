@@ -88,9 +88,9 @@ struct ContentView: View {
                 }
                 .tag(2)
                 
-                FavoritesView()
+                InboxView()
                     .tabItem {
-                        Label("Favorites", systemImage: "heart.fill")
+                        Label("Inbox", systemImage: "bubble.left.and.bubble.right.fill")
                     }
                     .tag(3)
                 

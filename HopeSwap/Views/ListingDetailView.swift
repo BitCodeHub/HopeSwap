@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseAuth
+import FirebaseFirestore
 
 struct PressedButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
@@ -23,12 +24,28 @@ struct ListingDetailView: View {
     @State private var showingSearch = false
     @State private var showingInsights = false
     @State private var showingEditFlow = false
+    @State private var isDescriptionExpanded = false
+    @State private var showingChat = false
+    @State private var conversation: Conversation? = nil
+    @State private var isSendingMessage = false
+    @State private var sellerInfo: User? = nil
+    @State private var showingMessageError = false
+    @State private var messageErrorText = ""
+    @FocusState private var isMessageFieldFocused: Bool
     
     var isOwnItem: Bool {
         guard let currentUserId = AuthenticationManager.shared.currentUserId else { 
+            print("🔍 isOwnItem: No current user ID")
             return false 
         }
-        return item.firebaseUserId == currentUserId || item.userId.uuidString == currentUserId
+        let isOwn = item.firebaseUserId == currentUserId || item.userId.uuidString == currentUserId
+        print("🔍 isOwnItem check:")
+        print("   - Current user ID: \(currentUserId)")
+        print("   - Item firebaseUserId: \(item.firebaseUserId ?? "nil")")
+        print("   - Item userId: \(item.userId.uuidString)")
+        print("   - Is own item: \(isOwn)")
+        print("   - Seller name: \(item.sellerUsername ?? "Unknown")")
+        return isOwn
     }
     
     var priceText: String {
@@ -42,8 +59,11 @@ struct ListingDetailView: View {
     var originalPriceText: String? {
         // Show original price if there's a discount
         if let price = item.price, price > 0 {
-            let originalPrice = price * 1.2 // Assuming 20% discount for demo
-            return "$\(Int(originalPrice))"
+            // Only show original price if current price is below a threshold
+            if price < 100 || (price < 1000 && price.truncatingRemainder(dividingBy: 10) == 0) {
+                let originalPrice = price * 1.2 // Assuming 20% discount for demo
+                return "$\(Int(originalPrice))"
+            }
         }
         return nil
     }
@@ -303,27 +323,66 @@ struct ListingDetailView: View {
                                     }
                                     
                                     HStack(spacing: 12) {
-                                        TextField("", text: $messageText)
-                                            .placeholder(when: messageText.isEmpty) {
-                                                Text("Type a message...")
+                                        ZStack(alignment: .leading) {
+                                            if messageText.isEmpty || messageText == "Is this still available?" {
+                                                Text(messageText.isEmpty ? "Type a message..." : messageText)
                                                     .foregroundColor(.gray)
+                                                    .padding(.horizontal, 12)
+                                                    .allowsHitTesting(false) // Allow taps to pass through to TextField
                                             }
+                                            
+                                            TextField("", text: $messageText, onEditingChanged: { isEditing in
+                                                if isEditing && messageText == "Is this still available?" {
+                                                    messageText = ""
+                                                }
+                                            })
                                             .foregroundColor(.white)
                                             .padding(12)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 20)
-                                                    .fill(Color.white.opacity(0.1))
-                                            )
-                                        
-                                        Button(action: {}) {
-                                            Text("Send")
-                                                .font(.headline)
-                                                .foregroundColor(.white)
-                                                .padding(.horizontal, 24)
-                                                .padding(.vertical, 12)
-                                                .background(Color.hopeBlue)
-                                                .cornerRadius(20)
+                                            .focused($isMessageFieldFocused)
+                                            .onTapGesture {
+                                                if messageText == "Is this still available?" {
+                                                    messageText = ""
+                                                }
+                                                isMessageFieldFocused = true
+                                            }
                                         }
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .fill(Color.white.opacity(0.1))
+                                        )
+                                        .onTapGesture {
+                                            if messageText == "Is this still available?" {
+                                                messageText = ""
+                                            }
+                                            isMessageFieldFocused = true
+                                        }
+                                        
+                                        Button(action: {
+                                            sendMessage()
+                                        }) {
+                                            if isSendingMessage {
+                                                ProgressView()
+                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                    .frame(width: 20, height: 20)
+                                                    .padding(.horizontal, 30)
+                                                    .padding(.vertical, 12)
+                                                    .background(Color.hopeBlue.opacity(0.7))
+                                                    .cornerRadius(20)
+                                            } else {
+                                                Text("Send")
+                                                    .font(.headline)
+                                                    .foregroundColor(.white)
+                                                    .padding(.horizontal, 24)
+                                                    .padding(.vertical, 12)
+                                                    .background(
+                                                        (messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingMessage) 
+                                                        ? Color.gray.opacity(0.5) 
+                                                        : Color.hopeBlue
+                                                    )
+                                                    .cornerRadius(20)
+                                            }
+                                        }
+                                        .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingMessage)
                                     }
                                 }
                                 .padding()
@@ -380,7 +439,10 @@ struct ListingDetailView: View {
                                 
                                 // Secondary action buttons
                                 HStack(spacing: 12) {
-                                    Button(action: {}) {
+                                    Button(action: {
+                                        // TODO: Implement actual share functionality
+                                        trackShare()
+                                    }) {
                                         VStack(spacing: 6) {
                                             Image(systemName: "square.and.arrow.up")
                                                 .font(.title2)
@@ -402,6 +464,7 @@ struct ListingDetailView: View {
                                     .buttonStyle(PressedButtonStyle())
                                     
                                     Button(action: {
+                                        trackSave() // Track BEFORE toggling
                                         dataManager.toggleFavorite(item.id)
                                     }) {
                                         VStack(spacing: 6) {
@@ -431,78 +494,112 @@ struct ListingDetailView: View {
                             }
                             
                             // Description section
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 Text("Description")
-                                    .font(.title3)
+                                    .font(.title2)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
+                                    .padding(.horizontal, 20)
+                                    .padding(.top, 20)
                                 
-                                Text(item.description.isEmpty ? "No description provided." : item.description)
-                                    .font(.body)
-                                    .foregroundColor(.gray)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                
-                                if !item.description.isEmpty && item.description.count > 200 {
-                                    Button(action: {}) {
-                                        Text("See more")
+                                VStack(alignment: .leading, spacing: 12) {
+                                    if item.description.isEmpty {
+                                        Text("No description provided.")
                                             .font(.body)
-                                            .foregroundColor(Color.hopeBlue)
+                                            .foregroundColor(.gray)
+                                    } else {
+                                        // Format description with line breaks
+                                        let formattedDescription = formatDescription(item.description)
+                                        
+                                        if isDescriptionExpanded || formattedDescription.count <= 300 {
+                                            Text(formattedDescription)
+                                                .font(.body)
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else {
+                                            Text(String(formattedDescription.prefix(300)) + "...")
+                                                .font(.body)
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                    
+                                    if !item.description.isEmpty && item.description.count > 300 {
+                                        Button(action: {
+                                            withAnimation {
+                                                isDescriptionExpanded.toggle()
+                                            }
+                                        }) {
+                                            Text(isDescriptionExpanded ? "See less" : "See more")
+                                                .font(.body)
+                                                .foregroundColor(Color.hopeBlue)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
                             }
-                            .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
                             
+                            // Divider
+                            Rectangle()
+                                .fill(Color.white.opacity(0.1))
+                                .frame(height: 1)
+                                .padding(.horizontal, 20)
+                            
                             // Additional details
-                            VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 20) {
                                 // Location and time
-                                HStack(spacing: 24) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "location")
-                                            .font(.caption)
+                                HStack(spacing: 32) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "location.fill")
+                                            .font(.system(size: 14))
                                             .foregroundColor(.gray)
                                         Text(item.location)
-                                            .font(.subheadline)
+                                            .font(.system(size: 15))
                                             .foregroundColor(.gray)
                                     }
                                     
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "clock")
-                                            .font(.caption)
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "clock.fill")
+                                            .font(.system(size: 14))
                                             .foregroundColor(.gray)
                                         Text(timeAgoString(from: item.postedDate))
-                                            .font(.subheadline)
+                                            .font(.system(size: 15))
                                             .foregroundColor(.gray)
                                     }
                                     
                                     Spacer()
                                 }
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 20)
                                 
                                 // Category and Condition
-                                HStack(spacing: 24) {
-                                    VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 50) {
+                                    VStack(alignment: .leading, spacing: 6) {
                                         Text("Category")
-                                            .font(.caption)
+                                            .font(.system(size: 15))
                                             .foregroundColor(.gray)
                                         Text(item.category.rawValue)
-                                            .font(.subheadline)
+                                            .font(.system(size: 17))
+                                            .fontWeight(.medium)
                                             .foregroundColor(.white)
                                     }
                                     
-                                    VStack(alignment: .leading, spacing: 4) {
+                                    VStack(alignment: .leading, spacing: 6) {
                                         Text("Condition")
-                                            .font(.caption)
+                                            .font(.system(size: 15))
                                             .foregroundColor(.gray)
                                         Text(item.condition.rawValue)
-                                            .font(.subheadline)
+                                            .font(.system(size: 17))
+                                            .fontWeight(.medium)
                                             .foregroundColor(.white)
                                     }
                                     
                                     Spacer()
                                 }
-                                .padding(.horizontal)
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 20)
                                 
                                 // Trade preferences if applicable
                                 if item.isTradeItem {
@@ -584,29 +681,140 @@ struct ListingDetailView: View {
             PostItemFlow(editingItem: item)
                 .environmentObject(dataManager)
         }
+        .onAppear {
+            trackClick()
+        }
+        .sheet(isPresented: $showingChat) {
+            if let conversation = conversation {
+                ChatView(conversation: conversation, otherUser: sellerInfo)
+                    .onDisappear {
+                        // Reset message text when chat closes
+                        messageText = "Is this still available?"
+                    }
+            }
+        }
+        .alert("Unable to Send Message", isPresented: $showingMessageError) {
+            Button("OK") {
+                showingMessageError = false
+            }
+        } message: {
+            Text(messageErrorText)
+        }
     }
     
     func deleteItem() {
         isDeleting = true
         Task {
-            do {
-                // In DEBUG mode, allow deletion of any item for testing
-                #if DEBUG
-                print("🗑️ DEBUG: Deleting item (testing mode)")
-                await dataManager.removeItem(item)
-                #else
-                // In production, use proper deletion with ownership checks
-                await dataManager.deleteItem(item)
-                #endif
+            // Always use proper deletion from Firestore
+            print("🗑️ Deleting item: \(item.title) (ID: \(item.id.uuidString))")
+            await dataManager.deleteItem(item)
+            
+            await MainActor.run {
+                dismiss()
+            }
+        }
+    }
+    
+    func sendMessage() {
+        print("📨 sendMessage called with text: '\(messageText)'")
+        guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { 
+            print("❌ Message text is empty")
+            return 
+        }
+        
+        // Use firebaseUserId if available, otherwise we need to handle this differently
+        guard let sellerId = item.firebaseUserId, !sellerId.isEmpty else {
+            print("❌ Item doesn't have a valid firebaseUserId. This item may have been created before Firebase Auth was implemented.")
+            print("   Item ID: \(item.id)")
+            print("   Item userId (UUID): \(item.userId)")
+            print("   Item firebaseUserId: \(item.firebaseUserId ?? "nil")")
+            
+            // Show an alert to the user
+            messageErrorText = "Unable to send message to this seller. This listing may have been created before our messaging system was updated. Please try another listing."
+            showingMessageError = true
+            isSendingMessage = false
+            return
+        }
+        
+        print("📨 Sending message to seller: \(sellerId)")
+        isSendingMessage = true
+        
+        Task {
+            // First fetch seller information
+            await fetchSellerInfo(sellerId: sellerId)
+            
+            // Create or get existing conversation
+            if let conversation = await dataManager.createOrGetConversation(
+                with: sellerId,
+                itemId: item.id.uuidString
+            ) {
+                print("✅ Conversation created/found: \(conversation.id)")
+                // Send the message
+                let success = await dataManager.sendMessage(
+                    text: messageText.trimmingCharacters(in: .whitespacesAndNewlines),
+                    to: conversation
+                )
                 
                 await MainActor.run {
-                    dismiss()
+                    if success {
+                        print("✅ Message sent successfully")
+                        self.conversation = conversation
+                        self.showingChat = true
+                    } else {
+                        print("❌ Failed to send message")
+                    }
+                    isSendingMessage = false
                 }
-            } catch {
-                print("❌ Error deleting item: \(error)")
+            } else {
+                print("❌ Failed to create conversation")
                 await MainActor.run {
-                    isDeleting = false
+                    isSendingMessage = false
                 }
+            }
+        }
+    }
+    
+    func fetchSellerInfo(sellerId: String) async {
+        print("📱 Fetching seller info for ID: \(sellerId)")
+        do {
+            let db = Firestore.firestore()
+            let userDoc = try await db.collection("users").document(sellerId).getDocument()
+            
+            if userDoc.exists, let data = userDoc.data() {
+                await MainActor.run {
+                    var user = User(
+                        username: data["name"] as? String ?? item.sellerUsername ?? "Unknown User",
+                        email: data["email"] as? String ?? ""
+                    )
+                    user.profileImageURL = data["avatar"] as? String ?? item.sellerProfileImageURL
+                    user.profilePicture = data["avatar"] as? String ?? item.sellerProfileImageURL
+                    self.sellerInfo = user
+                    print("✅ Seller info fetched: \(self.sellerInfo?.username ?? "Unknown")")
+                }
+            } else {
+                // If user document doesn't exist, create from item data
+                await MainActor.run {
+                    var user = User(
+                        username: item.sellerUsername ?? "Unknown User",
+                        email: ""
+                    )
+                    user.profileImageURL = item.sellerProfileImageURL
+                    user.profilePicture = item.sellerProfileImageURL
+                    self.sellerInfo = user
+                    print("⚠️ Using item data for seller info: \(self.sellerInfo?.username ?? "Unknown")")
+                }
+            }
+        } catch {
+            print("❌ Error fetching seller info: \(error)")
+            // Fallback to item data
+            await MainActor.run {
+                var user = User(
+                    username: item.sellerUsername ?? "Unknown User",
+                    email: ""
+                )
+                user.profileImageURL = item.sellerProfileImageURL
+                user.profilePicture = item.sellerProfileImageURL
+                self.sellerInfo = user
             }
         }
     }
@@ -652,6 +860,95 @@ struct ListingDetailView: View {
         case .good: return Color.hopeOrange
         case .fair: return Color.yellow
         case .poor: return Color.red
+        }
+    }
+    
+    // MARK: - Helper Functions
+    func formatDescription(_ description: String) -> String {
+        // Replace common patterns with proper line breaks
+        var formatted = description
+        
+        // Handle explicit line breaks
+        formatted = formatted.replacingOccurrences(of: "\\n", with: "\n")
+        
+        // Handle sentence-like breaks
+        formatted = formatted.replacingOccurrences(of: ". ", with: ".\n\n")
+        formatted = formatted.replacingOccurrences(of: "! ", with: "!\n\n")
+        formatted = formatted.replacingOccurrences(of: "? ", with: "?\n\n")
+        
+        // Handle list-like patterns
+        formatted = formatted.replacingOccurrences(of: " - ", with: "\n- ")
+        formatted = formatted.replacingOccurrences(of: " • ", with: "\n• ")
+        
+        // Handle colon patterns (like "What's Included:")
+        formatted = formatted.replacingOccurrences(of: ": ", with: ":\n")
+        
+        // Clean up any multiple newlines
+        while formatted.contains("\n\n\n") {
+            formatted = formatted.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+        }
+        
+        return formatted.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    // MARK: - Analytics Tracking
+    func trackClick() {
+        Task {
+            do {
+                print("📊 Tracking click for item: \(item.title) (ID: \(item.id.uuidString))")
+                try await FirestoreManager.shared.incrementItemClick(itemId: item.id.uuidString)
+                print("✅ Click tracked successfully")
+            } catch {
+                print("❌ Failed to track click for item \(item.id.uuidString): \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func trackSave() {
+        Task {
+            do {
+                let isCurrentlyFavorited = dataManager.favorites.contains(item.id)
+                print("📊 Tracking save for item: \(item.title) (ID: \(item.id.uuidString))")
+                print("📊 Currently favorited: \(isCurrentlyFavorited)")
+                
+                // Check if the user is adding or removing from favorites
+                if isCurrentlyFavorited {
+                    // User is removing from favorites
+                    print("📊 Decrementing save count (removing from favorites)")
+                    try await FirestoreManager.shared.decrementItemSave(itemId: item.id.uuidString)
+                } else {
+                    // User is adding to favorites
+                    print("📊 Incrementing save count (adding to favorites)")
+                    try await FirestoreManager.shared.incrementItemSave(itemId: item.id.uuidString)
+                }
+                print("✅ Save tracked successfully")
+            } catch {
+                print("❌ Failed to track save for item \(item.id.uuidString): \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func trackShare() {
+        Task {
+            do {
+                print("📊 Tracking share for item: \(item.title) (ID: \(item.id.uuidString))")
+                try await FirestoreManager.shared.incrementItemShare(itemId: item.id.uuidString)
+                print("✅ Share tracked successfully")
+            } catch {
+                print("❌ Failed to track share for item \(item.id.uuidString): \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func trackVideoPlay() {
+        Task {
+            do {
+                print("📊 Tracking video play for item: \(item.title) (ID: \(item.id.uuidString))")
+                try await FirestoreManager.shared.incrementVideoPlay(itemId: item.id.uuidString)
+                print("✅ Video play tracked successfully")
+            } catch {
+                print("❌ Failed to track video play for item \(item.id.uuidString): \(error.localizedDescription)")
+            }
         }
     }
 }

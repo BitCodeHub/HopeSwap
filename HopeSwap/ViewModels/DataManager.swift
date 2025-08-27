@@ -108,6 +108,7 @@ class DataManager: ObservableObject {
                 DispatchQueue.main.async {
                     self?.items = items
                     self?.isDataLoaded = true
+                    self?.checkItemsWithoutFirebaseUserId()
                 }
             }
             return
@@ -122,6 +123,7 @@ class DataManager: ObservableObject {
             DispatchQueue.main.async {
                 self?.items = items
                 self?.isDataLoaded = true
+                self?.checkItemsWithoutFirebaseUserId()
             }
         }
     }
@@ -149,6 +151,66 @@ class DataManager: ObservableObject {
         return userItems
     }
     
+    // Initialize analytics fields for all items
+    func initializeAllAnalyticsFields() async {
+        print("🔧 Initializing analytics fields for all items...")
+        do {
+            // First migrate any items to use UUID as document ID
+            try await firestoreManager.migrateItemsToUseUUIDAsDocumentId()
+            
+            // Then initialize analytics fields
+            let allItems = try await firestoreManager.fetchItems(limit: 1000)
+            print("🔧 Found \(allItems.count) items to check")
+            
+            var initialized = 0
+            for item in allItems {
+                try await firestoreManager.initializeAnalyticsFields(itemId: item.id.uuidString)
+                initialized += 1
+                if initialized % 10 == 0 {
+                    print("🔧 Initialized \(initialized) items...")
+                }
+            }
+            
+            print("✅ Analytics fields initialized for \(initialized) items")
+        } catch {
+            print("❌ Error initializing analytics fields: \(error)")
+        }
+    }
+    
+    // Fix items without firebaseUserId set
+    func fixItemsWithoutFirebaseUserId() async {
+        print("🔧 Checking for items without firebaseUserId...")
+        do {
+            let allItems = try await firestoreManager.fetchItems(limit: 1000)
+            var itemsFixed = 0
+            
+            for item in allItems {
+                // Skip if firebaseUserId is already set
+                if let firebaseUserId = item.firebaseUserId, !firebaseUserId.isEmpty {
+                    continue
+                }
+                
+                // For items without firebaseUserId, we can't automatically determine the correct Firebase UID
+                // Log these items for manual review
+                print("⚠️ Item without firebaseUserId found:")
+                print("   - Title: \(item.title)")
+                print("   - ID: \(item.id)")
+                print("   - userId (UUID): \(item.userId)")
+                print("   - Seller: \(item.sellerUsername ?? "Unknown")")
+                
+                itemsFixed += 1
+            }
+            
+            if itemsFixed > 0 {
+                print("⚠️ Found \(itemsFixed) items without firebaseUserId. These items won't support messaging until manually updated.")
+            } else {
+                print("✅ All items have firebaseUserId set")
+            }
+        } catch {
+            print("❌ Error checking items: \(error)")
+        }
+    }
+    
     // Load data from Firebase or sample data for development
     func loadData() async {
         print("DataManager.loadData() called")
@@ -166,6 +228,18 @@ class DataManager: ObservableObject {
         // We just need to check if Firebase is empty and load sample data if needed
         
         try? await Task.sleep(nanoseconds: 500_000_000) // Wait 0.5s for listener to fire
+        
+        // Initialize analytics fields for all items (run once)
+        if UserDefaults.standard.bool(forKey: "hasInitializedAnalytics") == false {
+            await initializeAllAnalyticsFields()
+            UserDefaults.standard.set(true, forKey: "hasInitializedAnalytics")
+        }
+        
+        // Check for items without firebaseUserId (run once)
+        if UserDefaults.standard.bool(forKey: "hasCheckedFirebaseUserIds") == false {
+            await fixItemsWithoutFirebaseUserId()
+            UserDefaults.standard.set(true, forKey: "hasCheckedFirebaseUserIds")
+        }
         
         await MainActor.run {
             // Never load sample data - only real items from authenticated users
@@ -228,7 +302,7 @@ class DataManager: ObservableObject {
         let now = Date()
         items = [
             {
-                var item = Item(title: "Free plants and succulents", description: "Moving out, giving away my plant collection. Includes cacti, succulents, and a small plant stand.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway, sellerUsername: "Emily Chen", sellerProfileImageURL: nil)
+                var item = Item(title: "Free plants and succulents", description: "Moving out and need to find a good home for my beloved plant collection!\n\n**What's Included:**\n• 3 different varieties of cacti (barrel, bunny ear, and pincushion)\n• 5 assorted succulents in 4\" pots\n• 1 large jade plant (about 2ft tall)\n• Various propagated succulent babies\n• Small wooden plant stand (holds 4 pots)\n\n**Condition:**\nAll plants are healthy and well-maintained. Some pots have minor wear but all are functional. The plant stand is sturdy pine wood with a natural finish.\n\n**Pickup Details:**\nMust take everything - not splitting up the collection. Available for pickup this weekend only. Please bring your own boxes/containers for transport.\n\nFirst come, first served!", category: .homeKitchen, condition: .good, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-3600), price: 0, priceIsFirm: false, isTradeItem: false, listingType: .giveAway, sellerUsername: "Emily Chen", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1459156212016-c812468e2115?w=400",
                     "https://images.unsplash.com/photo-1509423350716-97f9360b4e09?w=400",
@@ -238,7 +312,7 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Restaurant robot server", description: "Commercial-grade autonomous serving robot. Perfect for restaurants or events. Barely used.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false, listingType: .sell, sellerUsername: "TechStartup Inc", sellerProfileImageURL: nil)
+                var item = Item(title: "Restaurant robot server", description: "**Professional Autonomous Serving Robot - Model SR-2000**\n\nOur startup is pivoting, so we're selling our barely-used restaurant serving robot at a fraction of the original cost!\n\n**Key Features:**\n- Multi-level serving trays (3 tiers)\n- Advanced obstacle avoidance sensors\n- 8-hour battery life per charge\n- Touch screen interface for easy programming\n- Voice announcement capability\n- Can carry up to 40kg (88lbs)\n\n**Technical Specifications:**\n- Dimensions: 55cm x 55cm x 125cm\n- Speed: 0.5-1.2 m/s (adjustable)\n- Navigation: LIDAR + Visual SLAM\n- Connectivity: WiFi, Bluetooth\n- Charging time: 4-6 hours\n\n**What's Included:**\n- SR-2000 Robot Server\n- Charging dock\n- Tablet controller\n- Original manual and setup guide\n- 1-year warranty still valid (transferable)\n\n**Condition Notes:**\nUsed for only 3 months in our pilot program. Minor scuff on the base from normal use, otherwise in excellent condition. All sensors and systems fully functional.\n\n**Original Price:** $8,500\n**Asking Price:** $3,000 (negotiable for serious buyers)", category: .electronics, condition: .likeNew, userId: UUID(), location: "Garden Grove", postedDate: now.addingTimeInterval(-7200), price: 300.00, priceIsFirm: false, isTradeItem: false, listingType: .sell, sellerUsername: "TechStartup Inc", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400",
                     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
@@ -252,7 +326,7 @@ class DataManager: ObservableObject {
                 return item
             }(),
             {
-                var item = Item(title: "Old Japanese Silk Bonsai", description: "Rare vintage Japanese silk bonsai tree in ceramic pot. Artistic piece, great for decoration.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-3600 * 6), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Kenji Yamamoto", sellerProfileImageURL: nil)
+                var item = Item(title: "Old Japanese Silk Bonsai", description: "**Exquisite Vintage Japanese Silk Bonsai Collection**\n\nA rare opportunity to own an authentic piece of Japanese artistry from the 1970s.\n\n**About This Piece:**\nThis handcrafted silk bonsai represents the traditional Japanese art of creating lifelike artificial trees. Made by master craftsmen in Kyoto, each branch and leaf has been carefully positioned to mirror the natural growth patterns of a living bonsai.\n\n**Details:**\n• Age: Circa 1975-1980\n• Style: Formal upright (Chokkan)\n• Tree type: Pine replica\n• Height: 18 inches (including pot)\n• Spread: 22 inches\n\n**Craftsmanship Features:**\n- Hand-dyed silk leaves with realistic texture\n- Wire-wrapped branches for authentic shaping\n- Traditional moss ground cover\n- Genuine Tokoname ceramic pot (signed)\n- Original wooden display stand included\n\n**Historical Significance:**\nThis piece comes from the estate of a Japanese diplomat who served in Los Angeles during the 1970s. It was displayed in the consulate's reception area for many years.\n\n**Condition:**\nExcellent vintage condition with minor fading on some leaves that adds to its authentic aged appearance. No tears or damage to the silk. Ceramic pot has beautiful patina.\n\n**Why Silk Bonsai?**\nIn Japanese culture, high-quality silk bonsai are valued for their eternal beauty and zero maintenance. They're often passed down through generations as family heirlooms.\n\n**Price is firm** - Comparable pieces sell for $1,200+ at Japanese antique dealers.", category: .homeKitchen, condition: .good, userId: UUID(), location: "Westminster", postedDate: now.addingTimeInterval(-3600 * 6), price: 780.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Kenji Yamamoto", sellerProfileImageURL: nil)
                 item.images = [
                     "https://images.unsplash.com/photo-1467043198406-dc953a3defa0?w=400",
                     "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400",
@@ -304,7 +378,7 @@ class DataManager: ObservableObject {
             }(),
             // Additional items for different cities
             {
-                var item = Item(title: "MacBook Pro 14\"", description: "2023 model, M3 chip, excellent condition", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Alex Thompson", sellerProfileImageURL: nil)
+                var item = Item(title: "MacBook Pro 14\"", description: "**2023 MacBook Pro 14\" - M3 Chip**\n\n*Upgrading to the M3 Max, so letting this go to a good home!*\n\n**Specifications:**\n- Processor: Apple M3 chip (8-core CPU, 10-core GPU)\n- RAM: 16GB unified memory\n- Storage: 512GB SSD\n- Display: 14.2\" Liquid Retina XDR\n- Color: Space Gray\n\n**What's Included:**\n• MacBook Pro 14\" (2023)\n• Original 67W USB-C power adapter\n• USB-C to MagSafe 3 cable\n• Original box and documentation\n• Tomtoc protective sleeve (bonus)\n\n**Condition Details:**\n- Battery cycle count: 47\n- No scratches, dents, or cosmetic damage\n- Screen is pristine - always used with screen protector\n- Keyboard and trackpad work perfectly\n- All ports tested and functional\n\n**Additional Information:**\n- Purchased: November 2023 from Apple Store\n- AppleCare+ eligible until November 2024\n- Will be factory reset before sale\n- Original receipt available\n\n**Why I'm Selling:**\nI'm a video editor and need the extra GPU cores in the M3 Max for 8K footage. This machine is perfect for coding, design work, or general professional use.\n\n**Price is firm** - This is already $700 below retail for a practically new machine.", category: .electronics, condition: .likeNew, userId: UUID(), location: "Los Angeles", postedDate: now.addingTimeInterval(-3600 * 3), price: 1800.00, priceIsFirm: true, isTradeItem: false, listingType: .sell, sellerUsername: "Alex Thompson", sellerProfileImageURL: nil)
                 item.images = ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400"]
                 return item
             }(),
@@ -633,5 +707,116 @@ class DataManager: ObservableObject {
     
     func removeItem(_ item: Item) {
         items.removeAll { $0.id == item.id }
+    }
+    
+    // MARK: - Helper Methods for Item Management
+    
+    // Check and log items without proper firebaseUserId
+    func checkItemsWithoutFirebaseUserId() {
+        let itemsWithoutFirebaseUserId = items.filter { $0.firebaseUserId == nil || $0.firebaseUserId?.isEmpty == true }
+        
+        if !itemsWithoutFirebaseUserId.isEmpty {
+            print("⚠️ Found \(itemsWithoutFirebaseUserId.count) items without proper firebaseUserId:")
+            for item in itemsWithoutFirebaseUserId {
+                print("   - \(item.title) (ID: \(item.id), userId: \(item.userId), seller: \(item.sellerUsername ?? "Unknown"))")
+            }
+            print("⚠️ These items will not support messaging until updated with proper Firebase user IDs.")
+        }
+    }
+    
+    // MARK: - Messaging Methods
+    
+    // Create or get existing conversation
+    func createOrGetConversation(with userId: String, itemId: String? = nil) async -> Conversation? {
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else {
+            print("❌ No current user ID")
+            return nil
+        }
+        
+        let db = Firestore.firestore()
+        let participants = [currentUserId, userId].sorted() // Sort to ensure consistent order
+        
+        print("🔍 Creating/getting conversation between: \(currentUserId) and \(userId)")
+        print("🔍 Participants array: \(participants)")
+        
+        do {
+            // First, check if conversation already exists
+            let query = db.collection("conversations")
+                .whereField("participants", isEqualTo: participants)
+            
+            let snapshot = try await query.getDocuments()
+            
+            if let existingDoc = snapshot.documents.first {
+                // Return existing conversation
+                let data = existingDoc.data()
+                print("✅ Found existing conversation: \(existingDoc.documentID)")
+                return Conversation(
+                    id: existingDoc.documentID,
+                    participants: data["participants"] as? [String] ?? [],
+                    itemId: data["itemId"] as? String,
+                    lastMessage: data["lastMessage"] as? String ?? "",
+                    lastMessageTimestamp: (data["lastMessageTimestamp"] as? Timestamp)?.dateValue() ?? Date(),
+                    unreadCount: data["unreadCount"] as? Int ?? 0
+                )
+            }
+            
+            // Create new conversation
+            let newConversation = Conversation(
+                participants: participants,
+                itemId: itemId
+            )
+            
+            try await db.collection("conversations")
+                .document(newConversation.id)
+                .setData(newConversation.dictionary)
+            
+            print("✅ Created new conversation: \(newConversation.id)")
+            return newConversation
+            
+        } catch {
+            print("❌ Error creating/getting conversation: \(error)")
+            return nil
+        }
+    }
+    
+    // Send a message
+    func sendMessage(text: String, to conversation: Conversation) async -> Bool {
+        guard let currentUserId = AuthenticationManager.shared.currentUserId else {
+            print("❌ No current user ID")
+            return false
+        }
+        
+        let receiverId = conversation.participants.first { $0 != currentUserId } ?? ""
+        
+        let message = Message(
+            conversationId: conversation.id,
+            senderId: currentUserId,
+            receiverId: receiverId,
+            text: text
+        )
+        
+        let db = Firestore.firestore()
+        
+        do {
+            // Add message
+            try await db.collection("messages")
+                .document(message.id)
+                .setData(message.dictionary)
+            
+            // Update conversation
+            try await db.collection("conversations")
+                .document(conversation.id)
+                .updateData([
+                    "lastMessage": text,
+                    "lastMessageTimestamp": Timestamp(date: message.timestamp)
+                ])
+            
+            print("✅ Message sent successfully")
+            return true
+            
+        } catch {
+            print("❌ Error sending message: \(error)")
+            return false
+        }
     }
 }

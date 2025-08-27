@@ -5,7 +5,7 @@ import FirebaseAuth
 @MainActor
 class FirestoreManager: ObservableObject {
     static let shared = FirestoreManager()
-    private let db = Firestore.firestore()
+    let db = Firestore.firestore()
     
     private init() {}
     
@@ -62,8 +62,10 @@ class FirestoreManager: ObservableObject {
         itemData["createdAt"] = Timestamp()
         itemData["updatedAt"] = Timestamp()
         
-        let docRef = try await db.collection("items").addDocument(data: itemData)
-        return docRef.documentID
+        // Use the item's UUID as the document ID for consistency
+        let itemId = itemData["id"] as? String ?? UUID().uuidString
+        try await db.collection("items").document(itemId).setData(itemData)
+        return itemId
     }
     
     func updateItem(itemId: String, data: [String: Any]) async throws {
@@ -78,14 +80,184 @@ class FirestoreManager: ObservableObject {
             throw NSError(domain: "AuthError", code: 401, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
         }
         
+        print("🗑️ Attempting to delete item with ID: \(itemId)")
+        
+        // First try to delete using the item ID as document ID
         let document = try await db.collection("items").document(itemId).getDocument()
-        guard let data = document.data(),
-              let itemUserId = data["userId"] as? String,
-              itemUserId == userId else {
-            throw NSError(domain: "AuthError", code: 403, userInfo: [NSLocalizedDescriptionKey: "Not authorized to delete this item"])
+        
+        if document.exists {
+            // Document found with item ID
+            guard let data = document.data() else {
+                throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Document data not found"])
+            }
+            
+            // Check ownership
+            let itemFirebaseUserId = data["firebaseUserId"] as? String
+            let itemUserId = data["userId"] as? String
+            
+            // Allow deletion if user owns the item
+            guard itemFirebaseUserId == userId || itemUserId == userId else {
+                throw NSError(domain: "AuthError", code: 403, userInfo: [NSLocalizedDescriptionKey: "Not authorized to delete this item"])
+            }
+            
+            print("✅ Found document with matching ID, deleting...")
+            try await db.collection("items").document(itemId).delete()
+            print("✅ Item deleted successfully")
+        } else {
+            // Document not found with item ID, search by id field
+            print("⚠️ Document not found with ID \(itemId), searching by id field...")
+            
+            let querySnapshot = try await db.collection("items")
+                .whereField("id", isEqualTo: itemId)
+                .limit(to: 1)
+                .getDocuments()
+            
+            guard let doc = querySnapshot.documents.first else {
+                throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Item not found in database"])
+            }
+            
+            let data = doc.data()
+            
+            // Check ownership
+            let itemFirebaseUserId = data["firebaseUserId"] as? String
+            let itemUserId = data["userId"] as? String
+            
+            guard itemFirebaseUserId == userId || itemUserId == userId else {
+                throw NSError(domain: "AuthError", code: 403, userInfo: [NSLocalizedDescriptionKey: "Not authorized to delete this item"])
+            }
+            
+            print("✅ Found document with ID \(doc.documentID), deleting...")
+            try await db.collection("items").document(doc.documentID).delete()
+            print("✅ Item deleted successfully")
+        }
+    }
+    
+    // MARK: - Analytics Methods
+    func incrementItemClick(itemId: String) async throws {
+        // Use safe method that handles document ID mismatch
+        try await safeIncrementItemClick(itemId: itemId)
+    }
+    
+    func incrementVideoPlay(itemId: String) async throws {
+        // Use safe method that handles document ID mismatch
+        try await safeIncrementVideoPlay(itemId: itemId)
+    }
+    
+    func incrementItemSave(itemId: String) async throws {
+        // Use safe method that handles document ID mismatch
+        try await safeIncrementItemSave(itemId: itemId)
+    }
+    
+    func decrementItemSave(itemId: String) async throws {
+        // Use safe method that handles document ID mismatch
+        try await safeDecrementItemSave(itemId: itemId)
+    }
+    
+    func incrementItemShare(itemId: String) async throws {
+        // Use safe method that handles document ID mismatch
+        try await safeIncrementItemShare(itemId: itemId)
+    }
+    
+    // MARK: - Fetch Single Item
+    func fetchItem(itemId: String) async throws -> Item? {
+        // First try using the item ID as document ID
+        let document = try await db.collection("items").document(itemId).getDocument()
+        
+        if document.exists {
+            return try Item.fromFirestore(document: document)
         }
         
-        try await db.collection("items").document(itemId).delete()
+        // If not found, search by id field
+        print("⚠️ Document not found with ID \(itemId), searching by id field...")
+        let querySnapshot = try await db.collection("items")
+            .whereField("id", isEqualTo: itemId)
+            .limit(to: 1)
+            .getDocuments()
+        
+        guard let doc = querySnapshot.documents.first else {
+            return nil
+        }
+        
+        return try Item.fromFirestore(document: doc)
+    }
+    
+    // MARK: - Initialize Analytics Fields
+    func initializeAnalyticsFields(itemId: String) async throws {
+        // Use findDocumentId helper to get the actual document ID
+        let docId = try await findDocumentId(for: itemId)
+        let document = try await db.collection("items").document(docId).getDocument()
+        
+        guard document.exists else { 
+            print("⚠️ Document with ID \(docId) does not exist!")
+            return 
+        }
+        
+        let data = document.data() ?? [:]
+        
+        // Check if analytics fields exist, if not initialize them
+        var updates: [String: Any] = [:]
+        if data["clickCount"] == nil { updates["clickCount"] = 0 }
+        if data["videoPlays"] == nil { updates["videoPlays"] = 0 }
+        if data["saveCount"] == nil { updates["saveCount"] = 0 }
+        if data["shareCount"] == nil { updates["shareCount"] = 0 }
+        
+        // Only update if there are missing fields
+        if !updates.isEmpty {
+            print("🔧 Initializing analytics fields for document \(docId)")
+            try await db.collection("items").document(docId).updateData(updates)
+        }
+    }
+    
+    // Helper function to find document by item ID
+    private func findDocumentId(for itemId: String) async throws -> String {
+        // First try using the item ID as document ID
+        let document = try await db.collection("items").document(itemId).getDocument()
+        
+        if document.exists {
+            return document.documentID
+        }
+        
+        // If not found, search by id field
+        print("⚠️ Document not found with ID \(itemId), searching by id field...")
+        let querySnapshot = try await db.collection("items")
+            .whereField("id", isEqualTo: itemId)
+            .limit(to: 1)
+            .getDocuments()
+        
+        guard let doc = querySnapshot.documents.first else {
+            throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "Item not found in database"])
+        }
+        
+        print("✅ Found document with ID \(doc.documentID) for item \(itemId)")
+        return doc.documentID
+    }
+    
+    // MARK: - Migrate Documents to Use Item UUID as Document ID
+    func migrateItemsToUseUUIDAsDocumentId() async throws {
+        print("🔄 Starting migration to use UUID as document ID...")
+        
+        let snapshot = try await db.collection("items").getDocuments()
+        var migrated = 0
+        
+        for document in snapshot.documents {
+            let data = document.data()
+            guard let itemIdString = data["id"] as? String else { continue }
+            
+            // If document ID doesn't match item ID, we need to migrate
+            if document.documentID != itemIdString {
+                print("🔄 Migrating item: \(data["title"] ?? "Unknown") from \(document.documentID) to \(itemIdString)")
+                
+                // Create new document with item UUID as ID
+                try await db.collection("items").document(itemIdString).setData(data)
+                
+                // Delete old document
+                try await db.collection("items").document(document.documentID).delete()
+                
+                migrated += 1
+            }
+        }
+        
+        print("✅ Migration complete. Migrated \(migrated) items.")
     }
     
     func fetchItems(limit: Int = 50) async throws -> [Item] {

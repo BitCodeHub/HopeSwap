@@ -41,6 +41,12 @@ struct Item: Identifiable, Codable, Equatable {
     var isNearby: Bool = false
     var distance: Double? = nil
     
+    // Analytics properties
+    var clickCount: Int = 0
+    var videoPlays: Int = 0
+    var saveCount: Int = 0
+    var shareCount: Int = 0
+    
     init(id: UUID = UUID(), 
          title: String, 
          description: String, 
@@ -211,7 +217,11 @@ extension Item {
             "isNearby": isNearby,
             "distance": distance ?? 0,
             "sellerUsername": sellerUsername ?? "",
-            "sellerProfileImageURL": sellerProfileImageURL ?? ""
+            "sellerProfileImageURL": sellerProfileImageURL ?? "",
+            "clickCount": clickCount,
+            "videoPlays": videoPlays,
+            "saveCount": saveCount,
+            "shareCount": shareCount
         ]
     }
     
@@ -259,6 +269,12 @@ extension Item {
         let sellerUsername = data["sellerUsername"] as? String
         let sellerProfileImageURL = data["sellerProfileImageURL"] as? String
         
+        // Parse analytics
+        let clickCount = data["clickCount"] as? Int ?? 0
+        let videoPlays = data["videoPlays"] as? Int ?? 0
+        let saveCount = data["saveCount"] as? Int ?? 0
+        let shareCount = data["shareCount"] as? Int ?? 0
+        
         var item = Item(
             id: id,
             title: title,
@@ -286,6 +302,10 @@ extension Item {
         item.favoriteCount = favoriteCount
         item.isNearby = isNearby
         item.distance = distance
+        item.clickCount = clickCount
+        item.videoPlays = videoPlays
+        item.saveCount = saveCount
+        item.shareCount = shareCount
         
         return item
     }
@@ -336,6 +356,12 @@ extension Item {
         let sellerUsername = data["sellerUsername"] as? String
         let sellerProfileImageURL = data["sellerProfileImageURL"] as? String
         
+        // Parse analytics
+        let clickCount = data["clickCount"] as? Int ?? 0
+        let videoPlays = data["videoPlays"] as? Int ?? 0
+        let saveCount = data["saveCount"] as? Int ?? 0
+        let shareCount = data["shareCount"] as? Int ?? 0
+        
         var item = Item(
             id: id,
             title: title,
@@ -363,6 +389,10 @@ extension Item {
         item.favoriteCount = favoriteCount
         item.isNearby = isNearby
         item.distance = distance
+        item.clickCount = clickCount
+        item.videoPlays = videoPlays
+        item.saveCount = saveCount
+        item.shareCount = shareCount
         
         return item
     }

@@ -71,6 +71,24 @@ struct ProfileView: View {
                         MenuRow(title: "Settings", icon: "gearshape", action: {})
                         MenuRow(title: "Help & Support", icon: "questionmark.circle", action: {})
                         MenuRow(title: "About Hope", icon: "info.circle", action: {})
+                        #if DEBUG
+                        MenuRow(title: "Debug: Initialize Analytics", icon: "wand.and.rays", action: {
+                            Task {
+                                // Force re-initialization of analytics
+                                UserDefaults.standard.removeObject(forKey: "hasInitializedAnalytics")
+                                await dataManager.initializeAllAnalyticsFields()
+                            }
+                        })
+                        MenuRow(title: "Debug: Migrate Document IDs", icon: "arrow.triangle.2.circlepath", action: {
+                            Task {
+                                do {
+                                    try await FirestoreManager.shared.migrateItemsToUseUUIDAsDocumentId()
+                                } catch {
+                                    print("Migration error: \(error)")
+                                }
+                            }
+                        })
+                        #endif
                     }
                     .background(Color.hopeDarkSecondary)
                     .cornerRadius(15)
