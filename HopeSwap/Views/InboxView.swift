@@ -26,7 +26,6 @@ struct InboxView: View {
     @State private var selectedConversation: Conversation? = nil
     @State private var isLoading = true
     @State private var sortOption: SortOption = .newest
-    @State private var groupByListing = false
     @State private var showingNotifications = false
     @Environment(\.dismiss) var dismiss
     
@@ -89,9 +88,8 @@ struct InboxView: View {
                     // Custom header
                     headerView
                     
-                    // View controls
-                    HStack(spacing: 16) {
-                        // Sort button
+                    // Sort control
+                    HStack {
                         Menu {
                             ForEach(SortOption.allCases, id: \.self) { option in
                                 Button(action: {
@@ -110,7 +108,7 @@ struct InboxView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "arrow.up.arrow.down")
                                     .font(.system(size: 14))
-                                Text(sortOption.title)
+                                Text("Sort: \(sortOption.title)")
                                     .font(.system(size: 15, weight: .medium))
                                 Image(systemName: "chevron.down")
                                     .font(.system(size: 12))
@@ -123,40 +121,9 @@ struct InboxView: View {
                         }
                         
                         Spacer()
-                        
-                        // View mode buttons
-                        HStack(spacing: 0) {
-                            Button(action: {
-                                withAnimation {
-                                    groupByListing = false
-                                }
-                            }) {
-                                Image(systemName: "list.bullet")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(groupByListing ? .gray : .black)
-                                    .frame(width: 44, height: 36)
-                                    .background(groupByListing ? Color.clear : Color.white)
-                                    .cornerRadius(18, corners: [.topLeft, .bottomLeft])
-                            }
-                            
-                            Button(action: {
-                                withAnimation {
-                                    groupByListing = true
-                                }
-                            }) {
-                                Image(systemName: "square.grid.2x2")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(groupByListing ? .black : .gray)
-                                    .frame(width: 44, height: 36)
-                                    .background(groupByListing ? Color.white : Color.clear)
-                                    .cornerRadius(18, corners: [.topRight, .bottomRight])
-                            }
-                        }
-                        .background(Color.hopeDarkSecondary)
-                        .cornerRadius(18)
                     }
                     .padding(.horizontal)
-                    .padding(.vertical, 12)
+                    .padding(.bottom, 16)
                     
                     
                     if isLoading {
