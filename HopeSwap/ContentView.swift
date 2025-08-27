@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
     @StateObject private var authManager = AuthenticationManager.shared
+    @StateObject private var notificationManager = NotificationManager.shared
     @State private var selectedTab = 0
     @State private var showingPostOptions = false
     @State private var selectedPostType: PostType? = nil
@@ -93,6 +94,7 @@ struct ContentView: View {
                         Label("Inbox", systemImage: "bubble.left.and.bubble.right.fill")
                     }
                     .tag(3)
+                    .badge(notificationManager.unreadNotifications > 0 ? String(notificationManager.unreadNotifications) : nil)
                 
                 DonationView()
                     .tabItem {
