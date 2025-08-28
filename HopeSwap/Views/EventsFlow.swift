@@ -119,6 +119,23 @@ struct EventsFlow: View {
             case .exhibition: return "photo.on.rectangle"
             }
         }
+        
+        var color: Color {
+            switch self {
+            case .familyFriendly: return Color.mint
+            case .adults: return Color.red
+            case .kids: return Color.yellow
+            case .outdoor: return Color.hopeGreen
+            case .indoor: return Color.hopeBlue
+            case .workshop: return Color.orange
+            case .class_: return Color.hopePurple
+            case .meetup: return Color.indigo
+            case .festival: return Color.hopePink
+            case .market: return Color.brown
+            case .performance: return Color.cyan
+            case .exhibition: return Color.purple
+            }
+        }
     }
     
     enum RecurringFrequency: String, CaseIterable {
@@ -305,9 +322,9 @@ struct EventsFlow: View {
                     .font(.caption)
                     .foregroundColor(.gray)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(EventCategory.allCases, id: \.self) { category in
-                        EventCategoryTag(
+                        EventCategoryCard(
                             category: category,
                             isSelected: eventCategory.contains(category),
                             action: {
@@ -1172,28 +1189,40 @@ struct EventTypeCard: View {
     }
 }
 
-struct EventCategoryTag: View {
+struct EventCategoryCard: View {
     let category: EventsFlow.EventCategory
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: category.icon)
-                    .font(.caption)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? category.color : category.color.opacity(0.2))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: category.icon)
+                        .font(.title3)
+                        .foregroundColor(isSelected ? Color.hopeDarkBg : category.color)
+                }
                 
                 Text(category.rawValue)
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(isSelected ? Color.hopeDarkBg : .white)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.hopeOrange : Color.hopeDarkSecondary)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.hopeDarkSecondary)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? category.color : Color.clear, lineWidth: 2)
+                    )
             )
         }
     }
